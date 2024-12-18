@@ -11,7 +11,11 @@ on: # yamllint disable-line rule:truthy
   pull_request:
     branches: [main]
 
-permissions: read-all
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  statuses: write
 
 # Comment env block if you do not want to apply fixes
 env:
