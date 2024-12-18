@@ -22,8 +22,8 @@ format:  ## Format the code.
 
 .PHONY: lint
 lint:  ## Run all linters (black/ruff/pylint/mypy).
-	poetry run black --check .
-	poetry run ruff check .
+	poetry run black --check src
+	poetry run ruff check src
 	make mypy
 
 .PHONY: test
@@ -32,7 +32,7 @@ test:  ## Run the tests and check coverage.
 
 .PHONY: mypy
 mypy:  ## Run mypy.
-	poetry run mypy app
+	poetry run mypy src
 
 .PHONY: install
 install:  ## Install the dependencies excluding dev.
