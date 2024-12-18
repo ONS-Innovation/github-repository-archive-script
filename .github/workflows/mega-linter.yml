@@ -11,6 +11,8 @@ on: # yamllint disable-line rule:truthy
   pull_request:
     branches: [main]
 
+permissions: read-all
+
 # Comment env block if you do not want to apply fixes
 env:
   # Apply linter fixes configuration
