@@ -1,11 +1,16 @@
 import datetime
+import json
 import logging
 import os
-from pprint import pprint
-from typing import Any, Optional
+import time
+from functools import wraps
+from typing import Any, Callable, Optional, ParamSpec, TypeVar
 
 import boto3
 import github_api_toolkit
+
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 def get_environment_variable(variable_name: str) -> str:
@@ -28,32 +33,102 @@ def get_environment_variable(variable_name: str) -> str:
     return variable
 
 
+def get_dict_value(dictionary: dict, key: str) -> Any:
+    """Gets a value from a dictionary and raises an exception if it is not found.
+
+    Args:
+        dictionary (dict): The dictionary to get the value from.
+        key (str): The key to get the value for.
+
+    Raises:
+        Exception: If the key is not found in the dictionary.
+
+    Returns:
+        Any: The value of the key in the dictionary.
+    """
+    value = dictionary.get(key)
+
+    if value is None:
+        raise Exception(f"Key {key} not found in the dictionary.")
+
+    return value
+
+
+def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
+    """A decorator that retries a function if an exception is raised.
+
+    Args:
+        max_retries (int, optional): The number of times the function should be retried before failing. Defaults to 3.
+        delay (int, optional): The time delay in seconds between retry attempts. Defaults to 2.
+
+    Raises:
+        Exception: If the function fails after the maximum number of retries.
+
+    Returns:
+        Any: The result of the function.
+    """
+
+    def decorator(func: Callable[P, T]) -> Any:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any | None:
+            retries = 0
+            while retries < max_retries:
+                try:
+                    result = func(*args, **kwargs)
+                    if result is not None:  # Check if request was successful
+                        return result
+                    raise Exception("Request failed with None result")
+                except Exception as e:
+                    retries += 1
+                    if retries == max_retries:
+                        logger.error(f"Failed after {max_retries} retries: {e!s}")
+                        raise Exception from e
+                    logger.warning(f"Attempt {retries} failed. Retrying in {delay} seconds...")
+                    time.sleep(delay)
+            return None
+
+        return wrapper
+
+    return decorator
+
+
+# region Load Configuration File
+
+## Load the configuration file as a dictionary
+
+config_file = "./config/config.json"
+
+if not os.path.exists(config_file):
+    message = "Configuration file not found. Please check the path."
+    raise Exception(message)
+
+with open(config_file) as f:
+    config = json.load(f)
+
+## Get the feature dictionary and archive rules from the config file
+
+features = get_dict_value(config, "features")
+archive_rules = get_dict_value(config, "archive_configuration")
+
+# endregion
+
 # region Setup Logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-## Get the debug environment variable
+## Get the debug config value
 
-debug_value = get_environment_variable("DEBUG")
+debug = get_dict_value(features, "show_log_locally")
 
-## Convert the debug environment variable to a boolean
+## Delete the log file if it exists
+if os.path.exists("debug.log"):
+    os.remove("debug.log")
 
-if debug_value.lower() == "true":
-    debug = True
-elif debug_value.lower() == "false":
-    debug = False
-else:
-    message = "DEBUG environment variable must be 'true' or 'false'."
-    logger.error(message)
-    raise Exception(message)
+## If debug is True, log to a file
 
 if debug:
     logging.basicConfig(filename="debug.log", level=logging.DEBUG)
-
-    # Delete the log file if it exists
-    if os.path.exists("debug.log"):
-        os.remove("debug.log")
 
 
 def log_api_request(response_status: int, query: str, variables: dict) -> None:
@@ -150,11 +225,16 @@ logger.info("Test GraphQL Request OK")
 # region Get Repositories
 
 
-def get_repository_page(org: str, max_repos: int, cursor: Optional[str] = None) -> Any:
+@retry_on_error()
+def get_repository_page(
+    org: str, notification_issue_tag: str, exemption_filename: str, max_repos: int, cursor: Optional[str] = None
+) -> Any:
     """Gets a page of non-archived repositories from a GitHub organization.
 
     Args:
         org (str): The name of the GitHub organization.
+        notification_issue_tag (str): The tag of the issue that notifies the repository owner of archiving.
+        exemption_filename (str): The name of the file that shows if the repository is exempt from archiving or not.
         max_repos (int): The maximum number of repositories to get.
         cursor (str, optional): The cursor to get the next page of repositories. Defaults to None.
 
@@ -164,7 +244,7 @@ def get_repository_page(org: str, max_repos: int, cursor: Optional[str] = None) 
     logger.info(f"Getting repositories for {org} with a maximum of {max_repos} repositories. Cursor: {cursor}")
 
     query = """
-        query($org: String!, $max_repos: Int, $cursor: String) {
+        query($org: String!, $notification_issue_tag: String!, $exemption_filename_main: String!, $exemption_filename_master: String!, $max_repos: Int, $cursor: String) {
             organization(login: $org) {
                 repositories(first: $max_repos, isArchived: false, after: $cursor) {
                     pageInfo {
@@ -174,10 +254,20 @@ def get_repository_page(org: str, max_repos: int, cursor: Optional[str] = None) 
                     nodes {
                         name
                         updatedAt
-                        issues(first: 1, filterBy: {labels: ["archive"]}) {
+                        issues(first: 1, filterBy: {labels: [$notification_issue_tag]}) {
                             nodes {
                                 title
                                 createdAt
+                            }
+                        }
+                        archive_exception_main: object(expression: $exemption_filename_main) {
+                            ... on Blob {
+                                text
+                            }
+                        }
+                        archive_exception_master: object(expression: $exemption_filename_master) {
+                            ... on Blob {
+                                text
                             }
                         }
                     }
@@ -186,7 +276,14 @@ def get_repository_page(org: str, max_repos: int, cursor: Optional[str] = None) 
         }
     """
 
-    variables = {"org": org, "max_repos": max_repos, "cursor": cursor}
+    variables = {
+        "org": org,
+        "notification_issue_tag": notification_issue_tag,
+        "exemption_filename_main": f"main:{exemption_filename}",
+        "exemption_filename_master": f"master:{exemption_filename}",
+        "max_repos": max_repos,
+        "cursor": cursor,
+    }
 
     response = ql.make_ql_request(query, variables)
 
@@ -200,9 +297,25 @@ def get_repository_page(org: str, max_repos: int, cursor: Optional[str] = None) 
 repositories = []
 number_of_pages = 1
 
-response_json = get_repository_page(org, 100)
+notification_issue_tag = get_dict_value(archive_rules, "notification_issue_tag")
+exemption_filename = get_dict_value(archive_rules, "exemption_filename")
 
-repositories.extend(response_json["data"]["organization"]["repositories"]["nodes"])
+response_json = get_repository_page(org, notification_issue_tag, exemption_filename, 100)
+
+response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
+
+## Remove None values from the response
+
+response_repositories = [repository for repository in response_repositories if repository is not None]
+
+## Log any error repositories
+
+error_repositories = response_json.get("errors", None)
+
+if error_repositories is not None:
+    logger.error(f"Error repositories: {error_repositories}")
+
+repositories.extend(response_repositories)
 
 while response_json["data"]["organization"]["repositories"]["pageInfo"]["hasNextPage"]:
     cursor = response_json["data"]["organization"]["repositories"]["pageInfo"]["endCursor"]
@@ -210,8 +323,22 @@ while response_json["data"]["organization"]["repositories"]["pageInfo"]["hasNext
     print(f"Getting page {number_of_pages + 1} with cursor {cursor}.")
     logger.info(f"Getting page {number_of_pages + 1} with cursor {cursor}.")
 
-    response_json = get_repository_page(org, 100, cursor)
-    repositories.extend(response_json["data"]["organization"]["repositories"]["nodes"])
+    response_json = get_repository_page(org, notification_issue_tag, exemption_filename, 100, cursor)
+
+    response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
+
+    ## Remove None values from the response
+
+    response_repositories = [repository for repository in response_repositories if repository is not None]
+
+    ## Log any error repositories
+
+    error_repositories = response_json.get("errors", None)
+
+    if error_repositories is not None:
+        logger.error(f"Error repositories: {error_repositories}")
+
+    repositories.extend(response_repositories)
 
     number_of_pages += 1
 
@@ -222,26 +349,35 @@ logger.info(f"Found {len(repositories)} repositories in {number_of_pages} page(s
 
 # region Archive Process
 
+## Load the archive rules from the configuration file
+
+archive_threshold = get_dict_value(archive_rules, "archive_threshold")
+notification_period = get_dict_value(archive_rules, "notification_period")
+
+## Iterate through the repositories and apply the archive rules
+
 for repository in repositories:
 
-    pprint(repository)
+    try:
+        repository_last_updated = datetime.datetime.strptime(repository["updatedAt"], "%Y-%m-%dT%H:%M:%SZ")
+    except Exception as e:
+        logger.error(f"Error parsing repository last updated date: {e!s}")
+        continue
 
-    repository_last_updated = datetime.datetime.strptime(repository["updatedAt"], "%Y-%m-%dT%H:%M:%SZ")
-    one_year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
+    one_year_ago = datetime.datetime.now() - datetime.timedelta(days=archive_threshold)
 
     # If the repository has been updated in the last year, skip it
     if repository_last_updated > one_year_ago:
         continue
 
+    print(f"Repository: {repository['name']}")
+
     # If the repository has an issue with the label 'archive',
     # Check if the repository is exempt from archiving
     # Check if the repository issue has been open for more than 30 days
     # If not exempt and the issue has been open for more than 30 days, archive the repository
-    if repository["issues"]["nodes"]:
+    if len(repository["issues"]["nodes"]):
         print("TODO: Check for exemption and issue age")
-
-        print(repository["issues"]["nodes"][0]["title"])
-        print(repository["issues"]["nodes"][0]["createdAt"])
 
         print("TODO: Archive repository")
     else:

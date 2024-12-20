@@ -1,0 +1,11 @@
+{
+    "features": {
+        "show_log_locally": true 
+    },
+    "archive_configuration": {
+        "archive_threshold": 365,
+        "notification_period": 30,
+        "notification_issue_tag": "Archive Notice",
+        "exemption_filename": "ArchiveExemption.txt"
+    }
+}
