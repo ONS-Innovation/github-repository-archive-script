@@ -392,8 +392,6 @@ for repository in repositories:
     if repository_last_updated > one_year_ago:
         continue
 
-    print(f"Repository: {repository['name']}")
-
     # If the repository has an issue with the label defined in the configuration file,
     # Check if the repository issue has been open for more than 30 days
     # If the issue has been open for more than 30 days, archive the repository
@@ -405,7 +403,17 @@ for repository in repositories:
         issue_age = datetime.datetime.now() - issue_created_at
 
         if issue_age.days > notification_period:
-            print("TODO: Archive repository")
+            endpoint = f"/repos/{org}/{repository['name']}"
+
+            archive_params = {"archived": True}
+
+            response = rest.patch(endpoint, archive_params)
+
+            log_api_request("REST", response.status_code, endpoint, archive_params)
+
+            response.raise_for_status()
+
+            logger.info(f"Archived repository {repository['name']}")
 
     # If the repository does not have an issue with the label defined in the configuration file,
     # Create an issue with the label and a message to the repository owner/contributors
@@ -414,15 +422,15 @@ for repository in repositories:
 
         endpoint = f"/repos/{org}/{repository['name']}/issues"
 
-        params = {
+        issue_params = {
             "title": notification_issue_title,
             "body": notification_issue_body,
             "labels": [notification_issue_tag],
         }
 
-        response = rest.post(endpoint, params)
+        response = rest.post(endpoint, issue_params)
 
-        log_api_request("REST", response.status_code, endpoint, params)
+        log_api_request("REST", response.status_code, endpoint, issue_params)
 
         response.raise_for_status()
 
