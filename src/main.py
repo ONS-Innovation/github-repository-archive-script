@@ -131,15 +131,18 @@ if debug:
     logging.basicConfig(filename="debug.log", level=logging.DEBUG)
 
 
-def log_api_request(response_status: int, query: str, variables: dict) -> None:
+def log_api_request(api_type: str, response_status: int, query: str, variables: dict) -> None:
     """Logs the response of a GraphQL request.
 
     Args:
+        api_type (str): The type of API that was used (GraphQL or REST).
         response_status (int): The status code of the response.
-        query (str): The query that was sent.
+        query (str): The query that was sent or the endpoint that was hit.
         variables (dict): The variables that were sent with the query.
     """
-    logger.info("GraphQL Request", extra={"query": query, "variables": variables, "response_status": response_status})
+    logger.info(
+        f"{api_type} Request", extra={"query": query, "variables": variables, "response_status": response_status}
+    )
 
 
 # endregion
@@ -175,7 +178,7 @@ s3 = session.client(service_name="s3", region_name=aws_default_region)
 
 # endregion
 
-# region Create GitHub GraphQL Controller
+# region Create GitHub API Controllers
 
 ## Get GitHub App .pem file from AWS
 
@@ -214,11 +217,27 @@ query = """
 
 response = ql.make_ql_request(query, {})
 
-log_api_request(response.status_code, query, {})
+log_api_request("GraphQL", response.status_code, query, {})
 
 response.raise_for_status()
 
 logger.info("Test GraphQL Request OK")
+
+## Create an instance of the REST interface
+
+rest = github_api_toolkit.github_interface(token=token)
+
+## Test the REST interface
+
+endpoint = f"/orgs/{org}/repos"
+
+response = rest.get(endpoint)
+
+log_api_request("REST", response.status_code, endpoint, {})
+
+response.raise_for_status()
+
+logger.info("Test REST Request OK")
 
 # endregion
 
@@ -226,15 +245,12 @@ logger.info("Test GraphQL Request OK")
 
 
 @retry_on_error()
-def get_repository_page(
-    org: str, notification_issue_tag: str, exemption_filename: str, max_repos: int, cursor: Optional[str] = None
-) -> Any:
+def get_repository_page(org: str, notification_issue_tag: str, max_repos: int, cursor: Optional[str] = None) -> Any:
     """Gets a page of non-archived repositories from a GitHub organization.
 
     Args:
         org (str): The name of the GitHub organization.
         notification_issue_tag (str): The tag of the issue that notifies the repository owner of archiving.
-        exemption_filename (str): The name of the file that shows if the repository is exempt from archiving or not.
         max_repos (int): The maximum number of repositories to get.
         cursor (str, optional): The cursor to get the next page of repositories. Defaults to None.
 
@@ -244,7 +260,7 @@ def get_repository_page(
     logger.info(f"Getting repositories for {org} with a maximum of {max_repos} repositories. Cursor: {cursor}")
 
     query = """
-        query($org: String!, $notification_issue_tag: String!, $exemption_filename_main: String!, $exemption_filename_master: String!, $max_repos: Int, $cursor: String) {
+        query($org: String!, $notification_issue_tag: String!, $max_repos: Int, $cursor: String) {
             organization(login: $org) {
                 repositories(first: $max_repos, isArchived: false, after: $cursor) {
                     pageInfo {
@@ -254,20 +270,10 @@ def get_repository_page(
                     nodes {
                         name
                         updatedAt
-                        issues(first: 1, filterBy: {labels: [$notification_issue_tag]}) {
+                        issues(first: 1, filterBy: {labels: [$notification_issue_tag], states: OPEN}) {
                             nodes {
                                 title
                                 createdAt
-                            }
-                        }
-                        archive_exception_main: object(expression: $exemption_filename_main) {
-                            ... on Blob {
-                                text
-                            }
-                        }
-                        archive_exception_master: object(expression: $exemption_filename_master) {
-                            ... on Blob {
-                                text
                             }
                         }
                     }
@@ -279,15 +285,13 @@ def get_repository_page(
     variables = {
         "org": org,
         "notification_issue_tag": notification_issue_tag,
-        "exemption_filename_main": f"main:{exemption_filename}",
-        "exemption_filename_master": f"master:{exemption_filename}",
         "max_repos": max_repos,
         "cursor": cursor,
     }
 
     response = ql.make_ql_request(query, variables)
 
-    log_api_request(response.status_code, query, variables)
+    log_api_request("GraphQL", response.status_code, query, variables)
 
     response.raise_for_status()
 
@@ -300,7 +304,7 @@ number_of_pages = 1
 notification_issue_tag = get_dict_value(archive_rules, "notification_issue_tag")
 exemption_filename = get_dict_value(archive_rules, "exemption_filename")
 
-response_json = get_repository_page(org, notification_issue_tag, exemption_filename, 100)
+response_json = get_repository_page(org, notification_issue_tag, 100)
 
 response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
 
@@ -353,8 +357,26 @@ logger.info(f"Found {len(repositories)} repositories in {number_of_pages} page(s
 
 archive_threshold = get_dict_value(archive_rules, "archive_threshold")
 notification_period = get_dict_value(archive_rules, "notification_period")
+maximum_notifications = get_dict_value(archive_rules, "maximum_notifications")
+
+notification_issue_title = "Repository Archive Notice"
+notification_issue_body_tuple = (
+    "## Important Notice \n\n",
+    f"This repository has not been updated in over {archive_threshold} days and will be archived in {notification_period} days if no action is taken. \n",
+    "## Actions Required to Prevent Archive \n\n",
+    f"1. Update the repository by creating/updating a file called `{exemption_filename}`. \n",
+    "   - This file should contain the reason why the repository should not be archived. \n",
+    "   - If the file already exists, please update it with the latest information. \n",
+    "2. Close this issue. \n\n",
+    f"After these actions, the repository will be exempt from archive for another {archive_threshold} days. \n\n",
+    "If you have any questions, please contact an organization administrator.",
+)
+
+notification_issue_body = "".join(notification_issue_body_tuple)
 
 ## Iterate through the repositories and apply the archive rules
+
+issues_created = 0
 
 for repository in repositories:
 
@@ -372,17 +394,44 @@ for repository in repositories:
 
     print(f"Repository: {repository['name']}")
 
-    # If the repository has an issue with the label 'archive',
-    # Check if the repository is exempt from archiving
+    # If the repository has an issue with the label defined in the configuration file,
     # Check if the repository issue has been open for more than 30 days
-    # If not exempt and the issue has been open for more than 30 days, archive the repository
+    # If the issue has been open for more than 30 days, archive the repository
     if len(repository["issues"]["nodes"]):
-        print("TODO: Check for exemption and issue age")
 
-        print("TODO: Archive repository")
-    else:
-        # If the repository does not have an issue with the label 'archive',
-        # Create an issue with the label 'archive' and a message to the repository owner/contributors
-        print("TODO: Make issue")
+        issue_created_at = datetime.datetime.strptime(
+            repository["issues"]["nodes"][0]["createdAt"], "%Y-%m-%dT%H:%M:%SZ"
+        )
+        issue_age = datetime.datetime.now() - issue_created_at
+
+        if issue_age.days > notification_period:
+            print("TODO: Archive repository")
+
+    # If the repository does not have an issue with the label defined in the configuration file,
+    # Create an issue with the label and a message to the repository owner/contributors
+
+    elif issues_created < maximum_notifications:
+
+        endpoint = f"/repos/{org}/{repository['name']}/issues"
+
+        params = {
+            "title": notification_issue_title,
+            "body": notification_issue_body,
+            "labels": [notification_issue_tag],
+        }
+
+        response = rest.post(endpoint, params)
+
+        log_api_request("REST", response.status_code, endpoint, params)
+
+        response.raise_for_status()
+
+        logger.info(f"Created issue for repository {repository['name']}")
+
+        issues_created += 1
+
+    elif issues_created == maximum_notifications:
+        logger.info("Maximum number of notifications reached. No more notifications will be made.")
+        issues_created += 1
 
 # endregion
