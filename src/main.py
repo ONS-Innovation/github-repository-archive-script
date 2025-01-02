@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import json
 import logging
@@ -92,49 +93,30 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
     return decorator
 
 
-# region Load Configuration File
+def get_config_file(path: str) -> dict:
+    """Loads a configuration file as a dictionary.
 
-## Load the configuration file as a dictionary
+    Args:
+        path (str): The path to the configuration file.
 
-config_file = "./config/config.json"
+    Raises:
+        Exception: If the configuration file is not found.
 
-if not os.path.exists(config_file):
-    message = "Configuration file not found. Please check the path."
-    raise Exception(message)
-
-with open(config_file) as f:
-    config = json.load(f)
-
-## Get the feature dictionary and archive rules from the config file
-
-features = get_dict_value(config, "features")
-archive_rules = get_dict_value(config, "archive_configuration")
-
-# endregion
-
-# region Setup Logging
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-## Get the debug config value
-
-debug = get_dict_value(features, "show_log_locally")
-
-## Delete the log file if it exists
-if os.path.exists("debug.log"):
-    os.remove("debug.log")
-
-## If debug is True, log to a file
-
-if debug:
-    logging.basicConfig(filename="debug.log", level=logging.DEBUG)
+    Returns:
+        dict: The configuration file as a dictionary.
+    """
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        raise Exception("Configuration file not found. Please check the path.") from None
 
 
-def log_api_request(api_type: str, response_status: int, query: str, variables: dict) -> None:
+def log_api_request(logger: logging.Logger, api_type: str, response_status: int, query: str, variables: dict) -> None:
     """Logs the response of a GraphQL request.
 
     Args:
+        logger (logging.Logger): The logger to use for logging.
         api_type (str): The type of API that was used (GraphQL or REST).
         response_status (int): The status code of the response.
         query (str): The query that was sent or the endpoint that was hit.
@@ -143,105 +125,6 @@ def log_api_request(api_type: str, response_status: int, query: str, variables: 
     logger.info(
         f"{api_type} Request", extra={"query": query, "variables": variables, "response_status": response_status}
     )
-
-
-# endregion
-
-# region Import Environment Variables
-
-## GitHub Variables
-
-org = get_environment_variable("GITHUB_ORG")
-app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
-
-## AWS Variables
-
-aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
-aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
-
-aws_account = get_environment_variable("AWS_ACCOUNT_NAME")
-aws_bucket = f"{aws_account}-repository-archive-script"
-
-# endregion
-
-# region Create AWS Boto3 Instances
-
-session = boto3.Session()
-
-## Secret Manager
-
-secret_manager = session.client(service_name="secretsmanager", region_name=aws_default_region)
-
-## S3
-
-s3 = session.client(service_name="s3", region_name=aws_default_region)
-
-# endregion
-
-# region Create GitHub API Controllers
-
-## Get GitHub App .pem file from AWS
-
-response = secret_manager.get_secret_value(SecretId=aws_secret_name)
-
-pem_contents = response.get("SecretString", "")
-
-if pem_contents == "":
-    message = ".pem file not found in AWS Secrets Manager. Please check your environment variables."
-    logger.error(message)
-    raise Exception(message)
-
-## Exchange the .pem file for an access token
-
-token = github_api_toolkit.get_token_as_installation(org=org, pem_contents=pem_contents, app_client_id=app_client_id)
-
-if type(token) is not tuple:
-    logger.error(token)
-    raise Exception(token)
-
-token = token[0]
-
-## Create an instance of the GraphQL interface
-
-ql = github_api_toolkit.github_graphql_interface(token=token)
-
-## Test the GraphQL interface
-
-query = """
-    query {
-        viewer {
-            login
-        }
-    }
-"""
-
-response = ql.make_ql_request(query, {})
-
-log_api_request("GraphQL", response.status_code, query, {})
-
-response.raise_for_status()
-
-logger.info("Test GraphQL Request OK")
-
-## Create an instance of the REST interface
-
-rest = github_api_toolkit.github_interface(token=token)
-
-## Test the REST interface
-
-endpoint = f"/orgs/{org}/repos"
-
-response = rest.get(endpoint)
-
-log_api_request("REST", response.status_code, endpoint, {})
-
-response.raise_for_status()
-
-logger.info("Test REST Request OK")
-
-# endregion
-
-# region Get Repositories
 
 
 @retry_on_error()
@@ -291,43 +174,156 @@ def get_repository_page(org: str, notification_issue_tag: str, max_repos: int, c
 
     response = ql.make_ql_request(query, variables)
 
-    log_api_request("GraphQL", response.status_code, query, variables)
+    log_api_request(logger, "GraphQL", response.status_code, query, variables)
 
     response.raise_for_status()
 
     return response.json()
 
 
-repositories = []
-number_of_pages = 1
+if __name__ == "__main__":
 
-notification_issue_tag = get_dict_value(archive_rules, "notification_issue_tag")
-exemption_filename = get_dict_value(archive_rules, "exemption_filename")
+    # region Load Configuration File
 
-response_json = get_repository_page(org, notification_issue_tag, 100)
+    ## Load the configuration file as a dictionary
 
-response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
+    config_file = "./config/config.json"
 
-## Remove None values from the response
+    config = get_config_file(config_file)
 
-response_repositories = [repository for repository in response_repositories if repository is not None]
+    ## Get the feature dictionary and archive rules from the config file
 
-## Log any error repositories
+    features = get_dict_value(config, "features")
+    archive_rules = get_dict_value(config, "archive_configuration")
 
-error_repositories = response_json.get("errors", None)
+    # endregion
 
-if error_repositories is not None:
-    logger.error(f"Error repositories: {error_repositories}")
+    # region Setup Logging
 
-repositories.extend(response_repositories)
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
 
-while response_json["data"]["organization"]["repositories"]["pageInfo"]["hasNextPage"]:
-    cursor = response_json["data"]["organization"]["repositories"]["pageInfo"]["endCursor"]
+    ## Get the debug config value
 
-    print(f"Getting page {number_of_pages + 1} with cursor {cursor}.")
-    logger.info(f"Getting page {number_of_pages + 1} with cursor {cursor}.")
+    debug = get_dict_value(features, "show_log_locally")
 
-    response_json = get_repository_page(org, notification_issue_tag, exemption_filename, 100, cursor)
+    ## Delete the log file if it exists
+
+    with contextlib.suppress(FileNotFoundError):
+        os.remove("debug.log")
+
+    ## If debug is True, log to a file
+
+    if debug:
+        logging.basicConfig(filename="debug.log", level=logging.DEBUG)
+
+    # endregion
+
+    # region Import Environment Variables
+
+    ## GitHub Variables
+
+    org = get_environment_variable("GITHUB_ORG")
+    app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
+
+    ## AWS Variables
+
+    aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
+    aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
+
+    aws_account = get_environment_variable("AWS_ACCOUNT_NAME")
+    aws_bucket = f"{aws_account}-repository-archive-script"
+
+    # endregion
+
+    # region Create AWS Boto3 Instances
+
+    session = boto3.Session()
+
+    ## Secret Manager
+
+    secret_manager = session.client(service_name="secretsmanager", region_name=aws_default_region)
+
+    ## S3
+
+    s3 = session.client(service_name="s3", region_name=aws_default_region)
+
+    # endregion
+
+    # region Create GitHub API Controllers
+
+    ## Get GitHub App .pem file from AWS
+
+    response = secret_manager.get_secret_value(SecretId=aws_secret_name)
+
+    pem_contents = response.get("SecretString", "")
+
+    if pem_contents == "":
+        message = ".pem file not found in AWS Secrets Manager. Please check your environment variables."
+        logger.error(message)
+        raise Exception(message)
+
+    ## Exchange the .pem file for an access token
+
+    token = github_api_toolkit.get_token_as_installation(
+        org=org, pem_contents=pem_contents, app_client_id=app_client_id
+    )
+
+    if type(token) is not tuple:
+        logger.error(token)
+        raise Exception(token)
+
+    token = token[0]
+
+    ## Create an instance of the GraphQL interface
+
+    ql = github_api_toolkit.github_graphql_interface(token=token)
+
+    ## Test the GraphQL interface
+
+    query = """
+        query {
+            viewer {
+                login
+            }
+        }
+    """
+
+    response = ql.make_ql_request(query, {})
+
+    log_api_request(logger, "GraphQL", response.status_code, query, {})
+
+    response.raise_for_status()
+
+    logger.info("Test GraphQL Request OK")
+
+    ## Create an instance of the REST interface
+
+    rest = github_api_toolkit.github_interface(token=token)
+
+    ## Test the REST interface
+
+    endpoint = f"/orgs/{org}/repos"
+
+    response = rest.get(endpoint)
+
+    log_api_request(logger, "REST", response.status_code, endpoint, {})
+
+    response.raise_for_status()
+
+    logger.info("Test REST Request OK")
+
+    # endregion
+
+    # region Get Repositories
+
+    repositories = []
+    number_of_pages = 1
+
+    notification_issue_tag = get_dict_value(archive_rules, "notification_issue_tag")
+    exemption_filename = get_dict_value(archive_rules, "exemption_filename")
+
+    response_json = get_repository_page(org, notification_issue_tag, 100)
 
     response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
 
@@ -344,102 +340,125 @@ while response_json["data"]["organization"]["repositories"]["pageInfo"]["hasNext
 
     repositories.extend(response_repositories)
 
-    number_of_pages += 1
+    while response_json["data"]["organization"]["repositories"]["pageInfo"]["hasNextPage"]:
+        cursor = response_json["data"]["organization"]["repositories"]["pageInfo"]["endCursor"]
 
-print(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
-logger.info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
+        print(f"Getting page {number_of_pages + 1} with cursor {cursor}.")
+        logger.info(f"Getting page {number_of_pages + 1} with cursor {cursor}.")
 
-# endregion
+        response_json = get_repository_page(org, notification_issue_tag, exemption_filename, 100, cursor)
 
-# region Archive Process
+        response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
 
-## Load the archive rules from the configuration file
+        ## Remove None values from the response
 
-archive_threshold = get_dict_value(archive_rules, "archive_threshold")
-notification_period = get_dict_value(archive_rules, "notification_period")
-maximum_notifications = get_dict_value(archive_rules, "maximum_notifications")
+        response_repositories = [repository for repository in response_repositories if repository is not None]
 
-notification_issue_title = "Repository Archive Notice"
-notification_issue_body_tuple = (
-    "## Important Notice \n\n",
-    f"This repository has not been updated in over {archive_threshold} days and will be archived in {notification_period} days if no action is taken. \n",
-    "## Actions Required to Prevent Archive \n\n",
-    f"1. Update the repository by creating/updating a file called `{exemption_filename}`. \n",
-    "   - This file should contain the reason why the repository should not be archived. \n",
-    "   - If the file already exists, please update it with the latest information. \n",
-    "2. Close this issue. \n\n",
-    f"After these actions, the repository will be exempt from archive for another {archive_threshold} days. \n\n",
-    "If you have any questions, please contact an organization administrator.",
-)
+        ## Log any error repositories
 
-notification_issue_body = "".join(notification_issue_body_tuple)
+        error_repositories = response_json.get("errors", None)
 
-## Iterate through the repositories and apply the archive rules
+        if error_repositories is not None:
+            logger.error(f"Error repositories: {error_repositories}")
 
-issues_created = 0
+        repositories.extend(response_repositories)
 
-for repository in repositories:
+        number_of_pages += 1
 
-    try:
-        repository_last_updated = datetime.datetime.strptime(repository["updatedAt"], "%Y-%m-%dT%H:%M:%SZ")
-    except Exception as e:
-        logger.error(f"Error parsing repository last updated date: {e!s}")
-        continue
+    print(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
+    logger.info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
 
-    one_year_ago = datetime.datetime.now() - datetime.timedelta(days=archive_threshold)
+    # endregion
 
-    # If the repository has been updated in the last year, skip it
-    if repository_last_updated > one_year_ago:
-        continue
+    # region Archive Process
 
-    # If the repository has an issue with the label defined in the configuration file,
-    # Check if the repository issue has been open for more than 30 days
-    # If the issue has been open for more than 30 days, archive the repository
-    if len(repository["issues"]["nodes"]):
+    ## Load the archive rules from the configuration file
 
-        issue_created_at = datetime.datetime.strptime(
-            repository["issues"]["nodes"][0]["createdAt"], "%Y-%m-%dT%H:%M:%SZ"
-        )
-        issue_age = datetime.datetime.now() - issue_created_at
+    archive_threshold = get_dict_value(archive_rules, "archive_threshold")
+    notification_period = get_dict_value(archive_rules, "notification_period")
+    maximum_notifications = get_dict_value(archive_rules, "maximum_notifications")
 
-        if issue_age.days > notification_period:
-            endpoint = f"/repos/{org}/{repository['name']}"
+    notification_issue_title = "Repository Archive Notice"
+    notification_issue_body_tuple = (
+        "## Important Notice \n\n",
+        f"This repository has not been updated in over {archive_threshold} days and will be archived in {notification_period} days if no action is taken. \n",
+        "## Actions Required to Prevent Archive \n\n",
+        f"1. Update the repository by creating/updating a file called `{exemption_filename}`. \n",
+        "   - This file should contain the reason why the repository should not be archived. \n",
+        "   - If the file already exists, please update it with the latest information. \n",
+        "2. Close this issue. \n\n",
+        f"After these actions, the repository will be exempt from archive for another {archive_threshold} days. \n\n",
+        "If you have any questions, please contact an organization administrator.",
+    )
 
-            archive_params = {"archived": True}
+    notification_issue_body = "".join(notification_issue_body_tuple)
 
-            response = rest.patch(endpoint, archive_params)
+    ## Iterate through the repositories and apply the archive rules
 
-            log_api_request("REST", response.status_code, endpoint, archive_params)
+    issues_created = 0
+
+    for repository in repositories:
+
+        try:
+            repository_last_updated = datetime.datetime.strptime(repository["updatedAt"], "%Y-%m-%dT%H:%M:%SZ")
+        except Exception as e:
+            logger.error(f"Error parsing repository last updated date: {e!s}")
+            continue
+
+        one_year_ago = datetime.datetime.now() - datetime.timedelta(days=archive_threshold)
+
+        # If the repository has been updated in the last year, skip it
+        if repository_last_updated > one_year_ago:
+            continue
+
+        # If the repository has an issue with the label defined in the configuration file,
+        # Check if the repository issue has been open for more than 30 days
+        # If the issue has been open for more than 30 days, archive the repository
+        if len(repository["issues"]["nodes"]):
+
+            issue_created_at = datetime.datetime.strptime(
+                repository["issues"]["nodes"][0]["createdAt"], "%Y-%m-%dT%H:%M:%SZ"
+            )
+            issue_age = datetime.datetime.now() - issue_created_at
+
+            if issue_age.days > notification_period:
+                endpoint = f"/repos/{org}/{repository['name']}"
+
+                archive_params = {"archived": True}
+
+                response = rest.patch(endpoint, archive_params)
+
+                log_api_request(logger, "REST", response.status_code, endpoint, archive_params)
+
+                response.raise_for_status()
+
+                logger.info(f"Archived repository {repository['name']}")
+
+        # If the repository does not have an issue with the label defined in the configuration file,
+        # Create an issue with the label and a message to the repository owner/contributors
+
+        elif issues_created < maximum_notifications:
+
+            endpoint = f"/repos/{org}/{repository['name']}/issues"
+
+            issue_params = {
+                "title": notification_issue_title,
+                "body": notification_issue_body,
+                "labels": [notification_issue_tag],
+            }
+
+            response = rest.post(endpoint, issue_params)
+
+            log_api_request(logger, "REST", response.status_code, endpoint, issue_params)
 
             response.raise_for_status()
 
-            logger.info(f"Archived repository {repository['name']}")
+            logger.info(f"Created issue for repository {repository['name']}")
 
-    # If the repository does not have an issue with the label defined in the configuration file,
-    # Create an issue with the label and a message to the repository owner/contributors
+            issues_created += 1
 
-    elif issues_created < maximum_notifications:
+        elif issues_created == maximum_notifications:
+            logger.info("Maximum number of notifications reached. No more notifications will be made.")
+            issues_created += 1
 
-        endpoint = f"/repos/{org}/{repository['name']}/issues"
-
-        issue_params = {
-            "title": notification_issue_title,
-            "body": notification_issue_body,
-            "labels": [notification_issue_tag],
-        }
-
-        response = rest.post(endpoint, issue_params)
-
-        log_api_request("REST", response.status_code, endpoint, issue_params)
-
-        response.raise_for_status()
-
-        logger.info(f"Created issue for repository {repository['name']}")
-
-        issues_created += 1
-
-    elif issues_created == maximum_notifications:
-        logger.info("Maximum number of notifications reached. No more notifications will be made.")
-        issues_created += 1
-
-# endregion
+    # endregion
