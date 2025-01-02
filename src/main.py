@@ -93,7 +93,7 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
     return decorator
 
 
-def get_config_file(path: str) -> dict:
+def get_config_file(path: str) -> Any:
     """Loads a configuration file as a dictionary.
 
     Args:
@@ -103,7 +103,7 @@ def get_config_file(path: str) -> dict:
         Exception: If the configuration file is not found.
 
     Returns:
-        dict: The configuration file as a dictionary.
+        Any: The configuration file as a dictionary.
     """
     try:
         with open(path) as f:
