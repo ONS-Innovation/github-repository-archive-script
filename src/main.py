@@ -6,7 +6,7 @@ import logging
 import os
 import time
 from functools import wraps
-from typing import Any, Callable, ParamSpec, Tuple, TypeVar
+from typing import Any, Callable, ParamSpec, Tuple, TypeVar, Union
 
 import boto3
 import github_api_toolkit
@@ -83,7 +83,7 @@ def get_environment_variable(variable_name: str) -> str:
     return variable
 
 
-def get_access_token(secret_manager: Any, secret_name: str, org: str, app_client_id) -> Tuple[str, str]:
+def get_access_token(secret_manager: Any, secret_name: str, org: str, app_client_id: str) -> Tuple[str, str]:
     """Gets the access token from the AWS Secret Manager.
 
     Args:
@@ -158,10 +158,10 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
 
 @retry_on_error()
 def get_repository_page(
-    logger,
+    logger: logging.Logger,
     ql: github_api_toolkit.github_graphql_interface,
-    variables: dict[str, str, int, str],
-) -> dict:
+    variables: dict[str, Union[str, int, None]],
+) -> Any:
     """Gets a page of non-archived repositories from a GitHub organization.
 
     Args:
