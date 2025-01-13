@@ -146,7 +146,7 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
                 except Exception as e:
                     retries += 1
                     if retries == max_retries:
-                        raise Exception from e
+                        raise Exception(e) from e
                     logger.warning(f"Attempt {retries} failed. Retrying in {delay} seconds...")
                     time.sleep(delay)
             return None
