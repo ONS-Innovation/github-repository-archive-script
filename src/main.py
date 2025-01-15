@@ -212,54 +212,85 @@ def get_repository_page(
     return response.json()
 
 
-if __name__ == "__main__":
+def clean_repositories(repositories: list[dict]) -> list[dict]:
+    """Removes any None values from a list of repositories.
 
-    # Load the configuration file
-    config_file_path = "./config/config.json"
+    Args:
+        repositories (list[dict]): A list of repositories.
 
-    config = get_config_file(config_file_path)
+    Returns:
+        list[dict]: The list of repositories with None values removed.
+    """
+    return [repository for repository in repositories if repository is not None]
 
-    features = get_dict_value(config, "features")
-    archive_rules = get_dict_value(config, "archive_configuration")
 
-    # Initialise logging
+def log_error_repositories(logger: wrapped_logging, response_json: dict) -> None:
+    """Logs any errors in the response from the GitHub API.
 
-    debug = get_dict_value(features, "show_log_locally")
+    Args:
+        logger (wrapped_logging): The logger object.
+        response_json (dict): The response from the GitHub API.
+    """
+    error_repositories = response_json.get("errors")
 
-    logger = wrapped_logging(debug)
+    if error_repositories is not None:
+        logger.log_error(f"Error repositories: {error_repositories}")
 
-    logger.log_info("Initialised logging.")
 
-    # Get the environment variables
+def filter_response(logger: wrapped_logging, response_json: dict) -> Any:
+    """Filters the response from the GitHub API to get the repositories.
 
-    org = get_environment_variable("GITHUB_ORG")
-    app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
+    Args:
+        logger (wrapped_logging): The logger object.
+        response_json (dict): The response from the GitHub API.
 
-    aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
-    aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
+    Returns:
+        list[dict]: The list of repositories.
+    """
+    response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
 
-    logger.log_info("Environment variables retrieved.")
+    response_repositories = clean_repositories(response_repositories)
 
-    # Create Boto3 Secret Manager client
+    log_error_repositories(logger, response_json)
 
-    session = boto3.session.Session()
-    secret_manager = session.client(service_name="secretsmanager", region_name=aws_default_region)
+    return response_repositories
 
-    logger.log_info("Boto3 Secret Manager client created.")
 
-    # Create GitHub API interfaces (GraphQL and REST)
+def get_environment_variables() -> Tuple[str, str, str, str]:
+    """Gets the environment variables required for the script.
 
-    token = get_access_token(secret_manager, aws_secret_name, org, app_client_id)
+    Raises:
+        Exception: If any of the environment variables are not found.
 
-    logger.log_info("Access token for GitHub API retrieved.")
+    Returns:
+        Tuple[str, str, str, str]: The GitHub organization, the GitHub App client ID, the AWS default region, and the AWS Secret Manager secret name.
+    """
+    try:
+        org = get_environment_variable("GITHUB_ORG")
+        app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
 
-    ql = github_api_toolkit.github_graphql_interface(token[0])
-    rest = github_api_toolkit.github_interface(token[0])
+        aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
+        aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
+    except Exception as e:
+        raise Exception(e) from e
 
-    logger.log_info("GitHub API interfaces created.")
+    return org, app_client_id, aws_default_region, aws_secret_name
 
-    # Get the repositories from GitHub
 
+def get_repositories(
+    logger: wrapped_logging, ql: github_api_toolkit.github_graphql_interface, org: str, archive_rules: dict
+) -> tuple[list[dict], int]:
+    """Gets all the repositories from a GitHub organization.
+
+    Args:
+        logger (wrapped_logging): The logger object.
+        ql (github_api_toolkit.github_graphql_interface): The GraphQL interface for the GitHub API.
+        org (str): The name of the GitHub organization.
+        archive_rules (dict): The archive rules from the configuration file.
+
+    Returns:
+        tuple[list[dict], int]: A tuple containing the list of repositories and the number of pages of repositories.
+    """
     repositories = []
     number_of_pages = 1
 
@@ -274,18 +305,7 @@ if __name__ == "__main__":
 
     response_json = get_repository_page(logger, ql, variables)
 
-    response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
-
-    # Remove None values from the response
-
-    response_repositories = [repo for repo in response_repositories if repo is not None]
-
-    # Log any errors in the response
-
-    error_repositories = response_json.get("errors", None)
-
-    if error_repositories is not None:
-        logger.log_error(f"Error repositories: {error_repositories}")
+    response_repositories = filter_response(logger, response_json)
 
     repositories.extend(response_repositories)
 
@@ -298,51 +318,47 @@ if __name__ == "__main__":
 
         response_json = get_repository_page(logger, ql, variables)
 
-        response_repositories = response_json["data"]["organization"]["repositories"]["nodes"]
-
-        ## Remove None values from the response
-
-        response_repositories = [repository for repository in response_repositories if repository is not None]
-
-        ## Log any error repositories
-
-        error_repositories = response_json.get("errors", None)
-
-        if error_repositories is not None:
-            logger.log_error(f"Error repositories: {error_repositories}")
+        response_repositories = filter_response(logger, response_json)
 
         repositories.extend(response_repositories)
 
         number_of_pages += 1
 
-    logger.log_info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
+    return repositories, number_of_pages
 
-    # Load the archive rules from the configuration file
 
-    archive_threshold = get_dict_value(archive_rules, "archive_threshold")
-    notification_period = get_dict_value(archive_rules, "notification_period")
-    exemption_filename = get_dict_value(archive_rules, "exemption_filename")
-    maximum_notifications = get_dict_value(archive_rules, "maximum_notifications")
+def load_archive_rules(archive_rules: dict) -> Tuple[int, int, str, str, int]:
+    """Loads the archive rules from the configuration file.
 
-    notification_issue_title = "Repository Archive Notice"
-    notification_issue_body_tuple = (
-        "## Important Notice \n\n",
-        f"This repository has not been updated in over {archive_threshold} days and will be archived in {notification_period} days if no action is taken. \n",
-        "## Actions Required to Prevent Archive \n\n",
-        f"1. Update the repository by creating/updating a file called `{exemption_filename}`. \n",
-        "   - This file should contain the reason why the repository should not be archived. \n",
-        "   - If the file already exists, please update it with the latest information. \n",
-        "2. Close this issue. \n\n",
-        f"After these actions, the repository will be exempt from archive for another {archive_threshold} days. \n\n",
-        "If you have any questions, please contact an organization administrator.",
-    )
+    Args:
+        archive_rules (dict): The archive rules from the configuration file.
 
-    notification_issue_body = "".join(notification_issue_body_tuple)
+    Returns:
+        Tuple[int, int, str, str, int]: The archive threshold, the notification period, the notification issue tag, the exemption filename, and the maximum number of notifications.
+    """
+    archive_threshold = int(get_dict_value(archive_rules, "archive_threshold"))
+    notification_period = int(get_dict_value(archive_rules, "notification_period"))
+    notification_issue_tag = str(get_dict_value(archive_rules, "notification_issue_tag"))
+    exemption_filename = str(get_dict_value(archive_rules, "exemption_filename"))
+    maximum_notifications = int(get_dict_value(archive_rules, "maximum_notifications"))
 
-    # Iterate over the repositories, creating issues and archiving where necessary
+    return archive_threshold, notification_period, notification_issue_tag, exemption_filename, maximum_notifications
+
+
+def process_repositories(
+    interfaces: list[Any],
+    org: str,
+    repositories: list[dict],
+    archive_criteria: list[object],
+    notification_content: list[str],
+) -> Tuple[int, int]:
 
     issues_created = 0
     repositories_archived = 0
+
+    logger, rest = interfaces
+    archive_threshold, notification_period, notification_issue_tag, maximum_notifications = archive_criteria
+    notification_issue_title, notification_issue_body = notification_content
 
     for repository in repositories:
 
@@ -425,6 +441,90 @@ if __name__ == "__main__":
         else:
             logger.log_info("Skipping repository. Maximum number of notifications reached.")
 
-    logger.log_info(
-        f"Script completed. {len(repositories)} repositories checked. {issues_created} issues created. {repositories_archived} repositories archived."
+    return repositories_archived, issues_created
+
+
+def handler(event, context) -> str:  # type: ignore[no-untyped-def]
+
+    # Load the configuration file
+    config_file_path = "./config/config.json"
+
+    config = get_config_file(config_file_path)
+
+    features = get_dict_value(config, "features")
+    archive_rules = get_dict_value(config, "archive_configuration")
+
+    # Initialise logging
+
+    debug = get_dict_value(features, "show_log_locally")
+
+    logger = wrapped_logging(debug)
+
+    logger.log_info("Initialised logging.")
+
+    # Get the environment variables
+
+    org, app_client_id, aws_default_region, aws_secret_name = get_environment_variables()
+
+    logger.log_info("Environment variables retrieved.")
+
+    # Create Boto3 Secret Manager client
+
+    session = boto3.session.Session()
+    secret_manager = session.client(service_name="secretsmanager", region_name=aws_default_region)
+
+    logger.log_info("Boto3 Secret Manager client created.")
+
+    # Create GitHub API interfaces (GraphQL and REST)
+
+    token = get_access_token(secret_manager, aws_secret_name, org, app_client_id)
+
+    logger.log_info("Access token for GitHub API retrieved.")
+
+    ql = github_api_toolkit.github_graphql_interface(token[0])
+    rest = github_api_toolkit.github_interface(token[0])
+
+    logger.log_info("GitHub API interfaces created.")
+
+    # Get the repositories from GitHub
+
+    repositories, number_of_pages = get_repositories(logger, ql, org, archive_rules)
+
+    logger.log_info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
+
+    # Load the archive rules from the configuration file
+
+    archive_threshold, notification_period, notification_issue_tag, exemption_filename, maximum_notifications = (
+        load_archive_rules(archive_rules)
     )
+
+    notification_issue_title = "Repository Archive Notice"
+    notification_issue_body_tuple = (
+        "## Important Notice \n\n",
+        f"This repository has not been updated in over {archive_threshold} days and will be archived in {notification_period} days if no action is taken. \n",
+        "## Actions Required to Prevent Archive \n\n",
+        f"1. Update the repository by creating/updating a file called `{exemption_filename}`. \n",
+        "   - This file should contain the reason why the repository should not be archived. \n",
+        "   - If the file already exists, please update it with the latest information. \n",
+        "2. Close this issue. \n\n",
+        f"After these actions, the repository will be exempt from archive for another {archive_threshold} days. \n\n",
+        "If you have any questions, please contact an organization administrator.",
+    )
+
+    notification_issue_body = "".join(notification_issue_body_tuple)
+
+    # Iterate over the repositories, creating issues and archiving where necessary
+
+    interfaces = [logger, rest]
+    archive_criteria = [archive_threshold, notification_period, notification_issue_tag, maximum_notifications]
+    notification_content = [notification_issue_title, notification_issue_body]
+
+    repositories_archived, issues_created = process_repositories(
+        interfaces, org, repositories, archive_criteria, notification_content
+    )
+
+    message = f"Script completed. {len(repositories)} repositories checked. {issues_created} issues created. {repositories_archived} repositories archived."
+
+    logger.log_info(message)
+
+    return message
