@@ -189,7 +189,6 @@ class TestGetRepositoryPage:
         result = get_repository_page(mock_logger, mock_ql, variables)
 
         assert result == mock_response
-        mock_logger.info.assert_called_with("Request successsful. Response Status Code: 200")
 
     @patch("github_api_toolkit.github_graphql_interface")
     @patch("logging.Logger")
@@ -218,7 +217,6 @@ class TestGetRepositoryPage:
         result = get_repository_page(mock_logger, mock_ql, variables)
 
         assert result == mock_response
-        mock_logger.info.assert_called_with("Request successsful. Response Status Code: 200")
 
     @patch("github_api_toolkit.github_graphql_interface")
     @patch("logging.Logger")

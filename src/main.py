@@ -2,7 +2,6 @@
 
 import datetime
 import json
-import logging
 import os
 import time
 from functools import wraps
@@ -10,6 +9,8 @@ from typing import Any, Callable, ParamSpec, Tuple, TypeVar, Union
 
 import boto3
 import github_api_toolkit
+
+from src.logger import wrapped_logging
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -135,7 +136,7 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Any | None:
             retries = 0
 
-            logger = logging.getLogger(__name__)
+            logger = wrapped_logging(False)
 
             while retries < max_retries:
                 try:
@@ -147,7 +148,7 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
                     retries += 1
                     if retries == max_retries:
                         raise Exception(e) from e
-                    logger.warning(f"Attempt {retries} failed. Retrying in {delay} seconds...")
+                    logger.log_warning(f"Attempt {retries} failed. Retrying in {delay} seconds...")
                     time.sleep(delay)
             return None
 
@@ -158,7 +159,7 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
 
 @retry_on_error()
 def get_repository_page(
-    logger: logging.Logger,
+    logger: wrapped_logging,
     ql: github_api_toolkit.github_graphql_interface,
     variables: dict[str, Union[str, int, None]],
 ) -> Any:
@@ -175,7 +176,7 @@ def get_repository_page(
     if variables.get("cursor") == "None":
         variables["cursor"] = None
 
-    logger.info(
+    logger.log_info(
         f"Getting repositories for {get_dict_value(variables, "org")} with a maximum of {get_dict_value(variables, "max_repos")} repositories. Cursor: {variables.get("cursor", "None")}"
     )
 
@@ -206,7 +207,7 @@ def get_repository_page(
 
     response.raise_for_status()
 
-    logger.info(f"Request successsful. Response Status Code: {response.status_code}")
+    logger.log_info(f"Request successsful. Response Status Code: {response.status_code}")
 
     return response.json()
 
@@ -223,16 +224,11 @@ if __name__ == "__main__":
 
     # Initialise logging
 
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.INFO)
-
     debug = get_dict_value(features, "show_log_locally")
 
-    if debug:
-        logging.basicConfig(level=logging.DEBUG, filename="debug.log", filemode="w")
-        logger.info("Logger intialised in debug mode.")
-    else:
-        logger.info("Logger initialised.")
+    logger = wrapped_logging(debug)
+
+    logger.log_info("Initialised logging.")
 
     # Get the environment variables
 
@@ -242,25 +238,25 @@ if __name__ == "__main__":
     aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
     aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
 
-    logger.info("Environment variables retrieved.")
+    logger.log_info("Environment variables retrieved.")
 
     # Create Boto3 Secret Manager client
 
     session = boto3.session.Session()
     secret_manager = session.client(service_name="secretsmanager", region_name=aws_default_region)
 
-    logger.info("Boto3 Secret Manager client created.")
+    logger.log_info("Boto3 Secret Manager client created.")
 
     # Create GitHub API interfaces (GraphQL and REST)
 
     token = get_access_token(secret_manager, aws_secret_name, org, app_client_id)
 
-    logger.info("Access token for GitHub API retrieved.")
+    logger.log_info("Access token for GitHub API retrieved.")
 
     ql = github_api_toolkit.github_graphql_interface(token[0])
     rest = github_api_toolkit.github_interface(token[0])
 
-    logger.info("GitHub API interfaces created.")
+    logger.log_info("GitHub API interfaces created.")
 
     # Get the repositories from GitHub
 
@@ -289,7 +285,7 @@ if __name__ == "__main__":
     error_repositories = response_json.get("errors", None)
 
     if error_repositories is not None:
-        logger.error(f"Error repositories: {error_repositories}")
+        logger.log_error(f"Error repositories: {error_repositories}")
 
     repositories.extend(response_repositories)
 
@@ -298,7 +294,7 @@ if __name__ == "__main__":
 
         variables["cursor"] = cursor
 
-        logger.info(f"Getting page {number_of_pages + 1} with cursor {cursor}.")
+        logger.log_info(f"Getting page {number_of_pages + 1} with cursor {cursor}.")
 
         response_json = get_repository_page(logger, ql, variables)
 
@@ -313,13 +309,13 @@ if __name__ == "__main__":
         error_repositories = response_json.get("errors", None)
 
         if error_repositories is not None:
-            logger.error(f"Error repositories: {error_repositories}")
+            logger.log_error(f"Error repositories: {error_repositories}")
 
         repositories.extend(response_repositories)
 
         number_of_pages += 1
 
-    logger.info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
+    logger.log_info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
 
     # Load the archive rules from the configuration file
 
@@ -359,7 +355,7 @@ if __name__ == "__main__":
         if last_update > cut_off_date:
             continue
 
-        logger.info(
+        logger.log_info(
             f"Repository {repository['name']} has not been updated in over {archive_threshold} days. Eligible for archiving."
         )
 
@@ -378,20 +374,22 @@ if __name__ == "__main__":
 
                 archive_params = {"archived": True}
 
-                logger.info(f"Archiving repository {repository['name']}. Reason: Issue open for {issue_age.days} days.")
+                logger.log_info(
+                    f"Archiving repository {repository['name']}. Reason: Issue open for {issue_age.days} days."
+                )
 
                 response = rest.patch(endpoint, archive_params)
 
                 response.raise_for_status()
 
-                logger.info(f"Successfully archived repository {repository['name']}")
+                logger.log_info(f"Successfully archived repository {repository['name']}")
 
                 repositories_archived += 1
 
                 continue
 
             else:
-                logger.info(
+                logger.log_info(
                     f"Issue for repository {repository['name']} open for {issue_age.days} days. This does not meet the notification period ({notification_period} days). Skipping archiving."
                 )
                 continue
@@ -409,7 +407,7 @@ if __name__ == "__main__":
                 "labels": [notification_issue_tag],
             }
 
-            logger.info(
+            logger.log_info(
                 f"Creating issue for repository {repository['name']}. Reason: No issue found with label {notification_issue_tag}."
             )
 
@@ -417,16 +415,16 @@ if __name__ == "__main__":
 
             response.raise_for_status()
 
-            logger.info(f"Created issue for repository {repository['name']}.")
+            logger.log_info(f"Created issue for repository {repository['name']}.")
 
             issues_created += 1
 
         elif issues_created == maximum_notifications:
-            logger.info("Maximum number of notifications reached. No more notifications will be made.")
+            logger.log_info("Maximum number of notifications reached. No more notifications will be made.")
 
         else:
-            logger.info("Skipping repository. Maximum number of notifications reached.")
+            logger.log_info("Skipping repository. Maximum number of notifications reached.")
 
-    logger.info(
+    logger.log_info(
         f"Script completed. {len(repositories)} repositories checked. {issues_created} issues created. {repositories_archived} repositories archived."
     )
