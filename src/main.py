@@ -349,7 +349,7 @@ def process_repositories(
     interfaces: list[Any],
     org: str,
     repositories: list[dict],
-    archive_criteria: list[object],
+    archive_criteria: list[str],
     notification_content: list[str],
 ) -> Tuple[int, int]:
 
@@ -365,7 +365,7 @@ def process_repositories(
         last_update_string = get_dict_value(repository, "updatedAt")
         last_update = datetime.datetime.strptime(last_update_string, "%Y-%m-%dT%H:%M:%SZ")
 
-        cut_off_date = datetime.datetime.now() - datetime.timedelta(days=archive_threshold)
+        cut_off_date = datetime.datetime.now() - datetime.timedelta(days=float(archive_threshold))
 
         # If the repository has been updated in the last year, skip it
         if last_update > cut_off_date:
@@ -385,7 +385,7 @@ def process_repositories(
             )
             issue_age = datetime.datetime.now() - issue_created_at
 
-            if issue_age.days > notification_period:
+            if issue_age.days > int(notification_period):
                 endpoint = f"/repos/{org}/{repository['name']}"
 
                 archive_params = {"archived": True}
@@ -413,7 +413,7 @@ def process_repositories(
         # If the repository does not have an issue with the label defined in the configuration file,
         # Create an issue with the label and a message to the repository owner/contributors
 
-        if issues_created <= maximum_notifications:
+        if issues_created <= int(maximum_notifications):
 
             endpoint = f"/repos/{org}/{repository['name']}/issues"
 
@@ -435,7 +435,7 @@ def process_repositories(
 
             issues_created += 1
 
-        elif issues_created == maximum_notifications:
+        elif issues_created == int(maximum_notifications):
             logger.log_info("Maximum number of notifications reached. No more notifications will be made.")
 
         else:
@@ -516,7 +516,12 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
     # Iterate over the repositories, creating issues and archiving where necessary
 
     interfaces = [logger, rest]
-    archive_criteria = [archive_threshold, notification_period, notification_issue_tag, maximum_notifications]
+    archive_criteria = [
+        str(archive_threshold),
+        str(notification_period),
+        str(notification_issue_tag),
+        str(maximum_notifications),
+    ]
     notification_content = [notification_issue_title, notification_issue_body]
 
     repositories_archived, issues_created = process_repositories(
