@@ -360,6 +360,8 @@ def process_repositories(
     archive_threshold, notification_period, notification_issue_tag, maximum_notifications = archive_criteria
     notification_issue_title, notification_issue_body = notification_content
 
+    notice_issued = False
+
     for repository in repositories:
 
         last_update_string = get_dict_value(repository, "updatedAt")
@@ -413,7 +415,28 @@ def process_repositories(
         # If the repository does not have an issue with the label defined in the configuration file,
         # Create an issue with the label and a message to the repository owner/contributors
 
-        if issues_created <= int(maximum_notifications):
+        if issues_created < int(maximum_notifications):
+
+            # Create Issue Label for Archive Notice if it does not exist
+
+            label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
+
+            response = rest.get(label_endpoint)
+
+            if "404" in str(response):
+                label_params = {
+                    "name": notification_issue_tag,
+                    "color": "f29513",
+                    "description": "This label is used to notify repository owners and contributors of an impending archive.",
+                }
+
+                response = rest.post(f"/repos/{org}/{repository['name']}/labels", label_params)
+
+                response.raise_for_status()
+
+                logger.log_info(f"Created label {notification_issue_tag} for repository {repository['name']}.")
+
+            # Create Issue for Archive Notice
 
             endpoint = f"/repos/{org}/{repository['name']}/issues"
 
@@ -435,8 +458,9 @@ def process_repositories(
 
             issues_created += 1
 
-        elif issues_created == int(maximum_notifications):
+        elif issues_created == int(maximum_notifications) and not notice_issued:
             logger.log_info("Maximum number of notifications reached. No more notifications will be made.")
+            notice_issued = True
 
         else:
             logger.log_info("Skipping repository. Maximum number of notifications reached.")
