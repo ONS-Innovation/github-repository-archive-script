@@ -15,6 +15,7 @@ from src.main import (
     get_environment_variables,
     get_repositories,
     get_repository_page,
+    handler,
     load_archive_rules,
     log_error_repositories,
     process_repositories,
@@ -878,3 +879,141 @@ class TestProcessRepositories:
         # Assert that there was 1 post request for 1 repository
         # This means that the issue was created but not the label since it already exists
         assert mock_rest_instance.post.call_count == 1
+
+
+class TestHandler:
+    # The methods in this class exclude the linting check PLR0913.
+    # This check limits the number of arguments a function can have.
+    # The test for the handler function requires a large number of arguments as lots of mocking is required.
+    # This is why the check is excluded for each method.
+
+    @patch("src.main.get_config_file")
+    @patch("src.main.get_dict_value")
+    @patch("src.main.wrapped_logging")
+    @patch("src.main.get_environment_variables")
+    @patch("boto3.session.Session")
+    @patch("src.main.get_access_token")
+    @patch("github_api_toolkit.github_graphql_interface")
+    @patch("github_api_toolkit.github_interface")
+    @patch("src.main.get_repositories")
+    @patch("src.main.load_archive_rules")
+    @patch("src.main.process_repositories")
+    def test_handler_success(  # noqa: PLR0913
+        self,
+        mock_process_repositories,
+        mock_load_archive_rules,
+        mock_get_repositories,
+        mock_github_interface,
+        mock_github_graphql_interface,
+        mock_get_access_token,
+        mock_boto3_session,
+        mock_get_environment_variables,
+        mock_wrapped_logging,
+        mock_get_dict_value,
+        mock_get_config_file,
+    ):
+        # Mocking the return values
+        mock_get_config_file.return_value = {
+            "features": {"show_log_locally": True},
+            "archive_configuration": {"some_key": "some_value"},
+        }
+        mock_get_dict_value.side_effect = lambda d, k: d[k]
+        mock_wrapped_logging.return_value = MagicMock()
+        mock_get_environment_variables.return_value = (
+            "mock_org",
+            "mock_app_client_id",
+            "mock_aws_default_region",
+            "mock_aws_secret_name",
+        )
+        mock_boto3_session.return_value.client.return_value = MagicMock()
+        mock_get_access_token.return_value = ("mock_token", "mock_other_value")
+        mock_github_graphql_interface.return_value = MagicMock()
+        mock_github_interface.return_value = MagicMock()
+        mock_get_repositories.return_value = (["repo1", "repo2"], 1)
+        mock_load_archive_rules.return_value = (365, 30, "archive-notice", "DO_NOT_ARCHIVE", 5)
+        mock_process_repositories.return_value = (1, 1)
+
+        # Call the handler function
+        result = handler({}, {})
+
+        # Assertions
+        assert result == "Script completed. 2 repositories checked. 1 issues created. 1 repositories archived."
+        mock_get_config_file.assert_called_once_with("./config/config.json")
+        mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "features")
+        mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "archive_configuration")
+        mock_wrapped_logging.assert_called_once_with(True)
+        mock_get_environment_variables.assert_called_once()
+        mock_boto3_session.return_value.client.assert_called_once_with(
+            service_name="secretsmanager", region_name="mock_aws_default_region"
+        )
+        mock_get_access_token.assert_called_once_with(
+            mock_boto3_session.return_value.client.return_value,
+            "mock_aws_secret_name",
+            "mock_org",
+            "mock_app_client_id",
+        )
+        mock_github_graphql_interface.assert_called_once_with("mock_token")
+        mock_github_interface.assert_called_once_with("mock_token")
+        mock_get_repositories.assert_called_once_with(
+            mock_wrapped_logging.return_value,
+            mock_github_graphql_interface.return_value,
+            "mock_org",
+            {"some_key": "some_value"},
+        )
+        mock_load_archive_rules.assert_called_once_with({"some_key": "some_value"})
+        mock_process_repositories.assert_called_once_with(
+            [mock_wrapped_logging.return_value, mock_github_interface.return_value],
+            "mock_org",
+            ["repo1", "repo2"],
+            ["365", "30", "archive-notice", "5"],
+            [
+                "Repository Archive Notice",
+                "## Important Notice \n\nThis repository has not been updated in over 365 days and will be archived in 30 days if no action is taken. \n## Actions Required to Prevent Archive \n\n1. Update the repository by creating/updating a file called `DO_NOT_ARCHIVE`. \n   - This file should contain the reason why the repository should not be archived. \n   - If the file already exists, please update it with the latest information. \n2. Close this issue. \n\nAfter these actions, the repository will be exempt from archive for another 365 days. \n\nIf you have any questions, please contact an organization administrator.",
+            ],
+        )
+
+    @patch("src.main.get_config_file")
+    @patch("src.main.get_dict_value")
+    @patch("src.main.wrapped_logging")
+    @patch("src.main.get_environment_variables")
+    @patch("boto3.session.Session")
+    @patch("src.main.get_access_token")
+    @patch("github_api_toolkit.github_graphql_interface")
+    @patch("github_api_toolkit.github_interface")
+    @patch("src.main.get_repositories")
+    @patch("src.main.load_archive_rules")
+    @patch("src.main.process_repositories")
+    def test_handler_failure(  # noqa PLR0913
+        self,
+        mock_process_repositories,
+        mock_load_archive_rules,
+        mock_get_repositories,
+        mock_github_interface,
+        mock_github_graphql_interface,
+        mock_get_access_token,
+        mock_boto3_session,
+        mock_get_environment_variables,
+        mock_wrapped_logging,
+        mock_get_dict_value,
+        mock_get_config_file,
+    ):
+        # Mocking the return values
+        mock_get_config_file.side_effect = Exception("Configuration file not found")
+
+        # Call the handler function
+        with pytest.raises(Exception) as excinfo:
+            handler({}, {})
+
+        # Assertions
+        assert "Configuration file not found" in str(excinfo.value)
+        mock_get_config_file.assert_called_once_with("./config/config.json")
+        mock_get_dict_value.assert_not_called()
+        mock_wrapped_logging.assert_not_called()
+        mock_get_environment_variables.assert_not_called()
+        mock_boto3_session.assert_not_called()
+        mock_get_access_token.assert_not_called()
+        mock_github_graphql_interface.assert_not_called()
+        mock_github_interface.assert_not_called()
+        mock_get_repositories.assert_not_called()
+        mock_load_archive_rules.assert_not_called()
+        mock_process_repositories.assert_not_called()
