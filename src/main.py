@@ -557,3 +557,7 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
     logger.log_info(message)
 
     return message
+
+
+# if __name__ == "__main__":
+#     handler(None, None)
