@@ -5,13 +5,13 @@ A Python utility used to archive old, unused GitHub repositories from an organis
 ## Prerequisites
 
 - A Docker Daemon (Colima is recommended)
-    - [Colima](https://github.com/abiosoft/colima)
+  - [Colima](https://github.com/abiosoft/colima)
 - Terraform (For deployment)
-    - [Terraform](https://www.terraform.io/)
+  - [Terraform](https://www.terraform.io/)
 - Python >3.12
-    - [Python](https://www.python.org/)
+  - [Python](https://www.python.org/)
 - Make
-    - [GNU make](https://www.gnu.org/software/make/manual/make.html#Overview)
+  - [GNU make](https://www.gnu.org/software/make/manual/make.html#Overview)
 
 ## Makefile
 
@@ -99,7 +99,7 @@ Before the doing the following, make sure your Daemon is running. If using Colim
     When running the container, you are required to pass some environment variable.
 
     | Variable                    | Description                                                                               |
-    | --------------------------- | ----------------------------------------------------------------------------------------- |
+    |-----------------------------|-------------------------------------------------------------------------------------------|
     | GITHUB_ORG                  | The organisation you would like to run the tool in.                                       |
     | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API. |
     | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                     |
@@ -109,7 +109,7 @@ Before the doing the following, make sure your Daemon is running. If using Colim
     Once the container is running, a local endpoint is created at `localhost:9000/2015-03-31/functions/function/invocations`.
 
 4. Check the container is running (Optional).
-        
+
     ```bash
     docker ps
     ```
