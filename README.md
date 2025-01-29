@@ -2,6 +2,27 @@
 
 A Python utility used to archive old, unused GitHub repositories from an organisation.
 
+## Table of Contents
+
+- [GitHub Repository Archive Script](#github-repository-archive-script)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Makefile](#makefile)
+  - [Development](#development)
+  - [Running the Project](#running-the-project)
+    - [Containerised (Recommended)](#containerised-recommended)
+    - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
+  - [Deployment](#deployment)
+    - [Overview](#overview)
+    - [Prerequisites](#prerequisites-1)
+    - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
+    - [Deploying the Lambda](#deploying-the-lambda)
+    - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
+  - [Linting and Testing](#linting-and-testing)
+    - [GitHub Actions](#github-actions)
+    - [Running Tests Locally](#running-tests-locally)
+
+
 ## Prerequisites
 
 - A Docker Daemon (Colima is recommended)
@@ -168,6 +189,142 @@ To run the Lambda function outside of a container, we need to execute the `handl
     ```bash
     python3 src/main.py
     ```
+
+## Deployment
+
+### Overview
+
+This repository is designed to be hosted on AWS Lambda using a container image as the Lambda's definition.
+
+There are 2 parts to deployment:
+
+1. Updating the ECR Image.
+2. Updating the Lambda.
+
+### Prerequisites
+
+Before following the instructions below, we assume that:
+
+- An ECR repository exists on AWS that aligns with the Lambda's naming convention, `{env_name}-{lambda_name}` (these can be set within the `.tfvars` file. See [example_tfvars.txt](./terraform/service/env/dev/example_tfvars.txt)).
+- The AWS account contains underlying infrastructure to deploy on top of. This infrastructure is defined within [sdp-infrastructure](https://github.com/ONS-Innovation/sdp-infrastructure) on GitHub.
+- An AWS IAM user has been setup with appropriate permissions.
+
+Additionally, we recommend that you keep the container versioning in sync with GitHub releases. Internal documentation for this is available on Confluence ([GitHub Releases and AWS ECR Versions](https://confluence.ons.gov.uk/display/KEH/GitHub+Releases+and+AWS+ECR+Versions)). We follow Semantic Versioning ([Learn More](https://semver.org/spec/v2.0.0.html)).
+
+### Storing the Container on AWS Elastic Container Registry (ECR)
+
+When changes are made to the repository's source code, the code must be containerised and pushed to AWS for the lambda to use.
+
+The following instructions deploy to an ECR repository called `sdp-dev-repository-archive-script`. Please change this to `<env_name>-<lambda_name>` based on your AWS instance.
+
+All of the commands (steps 2-5) are available for your environment within the AWS GUI. Navigate to ECR > {repository_name} > View push commands.
+
+1. Export AWS credential into the environment. This makes it easier to ensure you are using the correct credentials.
+
+    ```bash
+    export AWS_ACCESS_KEY_ID="<aws_access_key_id>"
+    export AWS_SECRET_ACCESS_KEY="<aws_secret_access_key>"
+    ```
+
+2. Login to AWS.
+
+    ```bash
+    aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com
+    ```
+
+3. Ensuring you're at the root of the repository, build a docker image of the project.
+
+    ```bash
+    docker build -t sdp-dev-github-repository-archive-script .
+    ```
+
+    **Please Note:** Change `sdp-dev-github-repository-archive-script` within the above command to `<env_name>-<lambda_name>`.
+
+4. Tag the docker image to push to AWS, using the correct versioning mentioned in [prerequisites](#prerequisites-1).
+
+    ```bash
+    docker tag sdp-dev-github-repository-archive-script:latest <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com/sdp-dev-github-repository-archive-script:<semantic_version>
+    ```
+
+    **Please Note:** Change `sdp-dev-github-repository-archive-script` within the above command to `<env_name>-<lambda_name>`.
+
+5. Push the image to ECR.
+
+    ```bash
+    docker push <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com/sdp-dev-github-repository-archive-script:<semantic_version>
+    ```
+
+Once pushed, you should be able to see your new image version within the ECR repository.
+
+### Deploying the Lambda
+
+Once AWS ECR has the new container image, we need to update the Lambda's configuration to use it. To do this, use the repository's provided [Terraform](./terraform/).
+
+Within the terraform directory, there is a [service](./terraform/service/) subdirectory which contains the terraform to setup the lambda on AWS. 
+
+1. Change directory to the service terraform.
+
+    ```bash
+    cd terraform/service
+    ```
+
+2. Fill out the appropriate environment variables file
+    - `env/dev/dev.tfvars` for sdp-dev.
+    - `env/prod/prod.tfvars` for sdp-prod.
+
+    These files can be created based on [`example_tfvars.txt`](./terraform/service/env/dev/example_tfvars.txt).
+
+    **It is crucial that the completed `.tfvars` file does not get committed to GitHub.**
+
+3. Initialise the terraform using the appropriate `.tfbackend` file for the environment (`env/dev/backend-dev.tfbackend` or `env/prod/backend-prod.tfbackend`).
+
+    ```bash
+    terraform init -backend-config=env/dev/backend-dev.tfbackend -reconfigure
+    ```
+
+    **Please Note:** This step requires an AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to be loaded into the environment if not already in place. This can be done using:
+
+    ```bash
+    export AWS_ACCESS_KEY_ID="<aws_access_key_id>"
+    export AWS_SECRET_ACCESS_KEY="<aws_secret_access_key>"
+    ```
+
+4. Refresh the local state to ensure it is in sync with the backend, using the appropriate `.tfvars` file for the environment (`env/dev/dev.tfvars` or `env/prod/prod.tfvars`).
+
+    ```bash
+    terraform refresh -var-file=env/dev/dev.tfvars
+    ```
+
+5. Plan the changes, using the appropriate `.tfvars` file.
+
+    i.e. for dev use
+
+    ```bash
+    terraform plan -var-file=env/dev/dev.tfvars
+    ```
+
+6. Apply the changes, using the appropriate `.tfvars` file.
+
+    i.e. for dev use
+
+    ```bash
+    terraform apply -var-file=env/dev/dev.tfvars
+    ```
+
+Once applied successfully, the Lambda and EventBridge Schedule will be created.
+
+### Destroying / Removing the Lambda
+
+To delete the service resources, run the following:
+
+```bash
+cd terraform/service
+terraform init -backend-config=env/dev/backend-dev.tfbackend -reconfigure
+terraform refresh -var-file=env/dev/dev.tfvars
+terraform destroy -var-file=env/dev/dev.tfvars
+```
+
+**Please Note:** Make sure to use the correct `.tfbackend` and `.tfvars` files for your environment.
 
 ## Linting and Testing
 
