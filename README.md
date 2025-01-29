@@ -14,14 +14,13 @@ A Python utility used to archive old, unused GitHub repositories from an organis
     - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
   - [Deployment](#deployment)
     - [Overview](#overview)
-    - [Prerequisites](#prerequisites-1)
+    - [Deployment Prerequisites](#deployment-prerequisites)
     - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
     - [Deploying the Lambda](#deploying-the-lambda)
     - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
   - [Linting and Testing](#linting-and-testing)
     - [GitHub Actions](#github-actions)
     - [Running Tests Locally](#running-tests-locally)
-
 
 ## Prerequisites
 
@@ -201,7 +200,7 @@ There are 2 parts to deployment:
 1. Updating the ECR Image.
 2. Updating the Lambda.
 
-### Prerequisites
+### Deployment Prerequisites
 
 Before following the instructions below, we assume that:
 
@@ -240,7 +239,7 @@ All of the commands (steps 2-5) are available for your environment within the AW
 
     **Please Note:** Change `sdp-dev-github-repository-archive-script` within the above command to `<env_name>-<lambda_name>`.
 
-4. Tag the docker image to push to AWS, using the correct versioning mentioned in [prerequisites](#prerequisites-1).
+4. Tag the docker image to push to AWS, using the correct versioning mentioned in [prerequisites](#deployment-prerequisites).
 
     ```bash
     docker tag sdp-dev-github-repository-archive-script:latest <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com/sdp-dev-github-repository-archive-script:<semantic_version>
@@ -260,7 +259,7 @@ Once pushed, you should be able to see your new image version within the ECR rep
 
 Once AWS ECR has the new container image, we need to update the Lambda's configuration to use it. To do this, use the repository's provided [Terraform](./terraform/).
 
-Within the terraform directory, there is a [service](./terraform/service/) subdirectory which contains the terraform to setup the lambda on AWS. 
+Within the terraform directory, there is a [service](./terraform/service/) subdirectory which contains the terraform to setup the lambda on AWS.
 
 1. Change directory to the service terraform.
 
