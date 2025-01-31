@@ -11,7 +11,6 @@ skip-check:
   - CKV_AWS_158
   - CKV_AWS_338
 
-
   # These ignores are TEMPORARY. They will be resolved in the future.
   - CKV_AWS_108
   - CKV_TF_1
