@@ -27,8 +27,13 @@ DISABLE_LINTERS:
   - REPOSITORY_DEVSKIM
   - REPOSITORY_TRUFFLEHOG
   - REPOSITORY_GIT_DIFF
+
+  # Disabled due to false positives
   - MARKDOWN_MARKDOWN_LINK_CHECK
+
+  # Disabled due to unneeded linting. Checkov, Kics and Trivy are sufficient.
   - TERRAFORM_TFLINT
+  - TERRAFORM_TERRASCAN
 
 SHOW_ELAPSED_TIME: true
 
