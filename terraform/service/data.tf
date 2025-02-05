@@ -43,24 +43,6 @@ data "aws_iam_policy_document" "lambda_logging" {
   }
 }
 
-data "aws_iam_policy_document" "lambda_s3_policy" {
-  statement {
-    effect = "Allow"
-
-    actions = [
-      "s3:ListAllMyBuckets", # Allows listing all buckets in the account
-      "s3:GetObject",        # Allows reading objects in buckets
-      "s3:PutObject",        # Allows writing objects to buckets
-      "s3:ListBucket"
-    ]
-
-    resources = [
-      "arn:aws:s3:::*",  # Allows access to all buckets
-      "arn:aws:s3:::*/*" # Allows access to all objects within all buckets
-    ]
-  }
-}
-
 data "aws_iam_policy_document" "lambda_secret_manager_policy" {
   statement {
     effect = "Allow"
@@ -70,7 +52,7 @@ data "aws_iam_policy_document" "lambda_secret_manager_policy" {
     ]
 
     resources = [
-      "*"
+      "arn:aws:secretsmanager:*:*:secret:${var.aws_secret_name}*"
     ]
   }
 }

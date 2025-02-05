@@ -15,12 +15,6 @@ resource "aws_security_group" "lambda_sg" {
     protocol    = "tcp"
     cidr_blocks = ["10.0.0.0/16"] // Allow HTTPS traffic within VPC
   }
-  # egress {
-  #   from_port   = 0
-  #   to_port     = 0
-  #   protocol    = "-1"
-  #   cidr_blocks = ["0.0.0.0/0"] // Allow all outbound traffic
-  # }
 }
 
 resource "aws_lambda_function" "lambda_function" {
@@ -48,8 +42,7 @@ resource "aws_lambda_function" "lambda_function" {
       GITHUB_ORG           = var.github_org
       GITHUB_APP_CLIENT_ID = var.github_app_client_id
       AWS_SECRET_NAME      = var.aws_secret_name
-      //AWS_DEFAULT_REGION = var.region // This is already set in AWS Lambda by default and is not needed
-      AWS_ACCOUNT_NAME = var.env_name
+      AWS_ACCOUNT_NAME     = var.env_name
     }
   }
 }
@@ -94,17 +87,6 @@ resource "aws_iam_policy" "lambda_logging" {
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
   role       = aws_iam_role.lambda_function_role.name
   policy_arn = aws_iam_policy.lambda_logging.arn
-}
-
-resource "aws_iam_policy" "lambda_s3_policy" {
-  name        = "${var.lambda_name}-${var.env_name}-s3-policy"
-  description = "IAM policy for S3 access for Lambda function"
-  policy      = data.aws_iam_policy_document.lambda_s3_policy.json
-}
-
-resource "aws_iam_role_policy_attachment" "s3_policy" {
-  role       = aws_iam_role.lambda_function_role.name
-  policy_arn = aws_iam_policy.lambda_s3_policy.arn
 }
 
 resource "aws_iam_policy" "lambda_secret_manager_policy" {
