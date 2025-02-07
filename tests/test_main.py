@@ -4,6 +4,7 @@ import os
 from unittest.mock import MagicMock, call, mock_open, patch
 
 import pytest
+from requests import HTTPError, Response
 
 from src.main import (
     clean_repositories,
@@ -15,6 +16,7 @@ from src.main import (
     get_environment_variables,
     get_repositories,
     get_repository_page,
+    handle_response,
     handler,
     load_archive_rules,
     log_error_repositories,
@@ -560,8 +562,7 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status.return_value = None
+        mock_response = Response()
         mock_rest_instance.patch.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
@@ -593,8 +594,8 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status.return_value = None
+        mock_response = Response()
+
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
@@ -685,8 +686,7 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status.return_value = None
+        mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
@@ -787,8 +787,7 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status.return_value = None
+        mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
@@ -826,8 +825,7 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", notification_issue_tag, "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status.return_value = None
+        mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
@@ -865,8 +863,7 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", notification_issue_tag, "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
-        mock_response = MagicMock()
-        mock_response.raise_for_status.return_value = None
+        mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
@@ -879,6 +876,114 @@ class TestProcessRepositories:
         # Assert that there was 1 post request for 1 repository
         # This means that the issue was created but not the label since it already exists
         assert mock_rest_instance.post.call_count == 1
+
+    @patch("src.main.wrapped_logging")
+    @patch("github_api_toolkit.github_interface")
+    def test_process_repositories_issue_label_creation_failed(self, mock_rest, mock_logger):
+        mock_logger_instance = mock_logger.return_value
+        mock_rest_instance = mock_rest.return_value
+
+        # Make check for if the label exists successful
+        mock_rest_instance.get.return_value = "404"
+
+        interfaces = [mock_logger_instance, mock_rest_instance]
+        org = "test_org"
+        repositories = [
+            {
+                "name": "repo1",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            }
+        ]
+
+        notification_issue_tag = "archive-notice"
+
+        archive_criteria = ["365", "30", notification_issue_tag, "5"]
+        notification_content = ["Repository Archive Notice", "This repository will be archived."]
+
+        mock_response = HTTPError()
+        mock_rest_instance.post.return_value = mock_response
+
+        repositories_archived, issues_created = process_repositories(
+            interfaces, org, repositories, archive_criteria, notification_content
+        )
+
+        assert repositories_archived == 0
+        assert issues_created == 0
+
+        # Assert that there was 1 post request for 1 repository
+        # This means that the label creation failed and the issue was not created
+        assert mock_rest_instance.post.call_count == 1
+
+    @patch("src.main.wrapped_logging")
+    @patch("github_api_toolkit.github_interface")
+    def test_process_repositories_issue_creation_failed(self, mock_rest, mock_logger):
+        mock_logger_instance = mock_logger.return_value
+        mock_rest_instance = mock_rest.return_value
+
+        # Make check for if the label exists successful
+        mock_rest_instance.get.return_value.status_code = 200
+
+        interfaces = [mock_logger_instance, mock_rest_instance]
+        org = "test_org"
+        repositories = [
+            {
+                "name": "repo1",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            }
+        ]
+
+        notification_issue_tag = "archive-notice"
+
+        archive_criteria = ["365", "30", notification_issue_tag, "5"]
+        notification_content = ["Repository Archive Notice", "This repository will be archived."]
+
+        mock_response = HTTPError()
+        mock_rest_instance.post.return_value = mock_response
+
+        repositories_archived, issues_created = process_repositories(
+            interfaces, org, repositories, archive_criteria, notification_content
+        )
+
+        assert repositories_archived == 0
+        assert issues_created == 0
+
+        # Assert that there was 1 post request for 1 repository
+        # This means that the issue creation failed
+        assert mock_rest_instance.post.call_count == 1
+
+    # test archive failure
+    @patch("src.main.wrapped_logging")
+    @patch("github_api_toolkit.github_interface")
+    def test_process_repositories_archive_failure(self, mock_rest, mock_logger):
+        mock_logger_instance = mock_logger.return_value
+        mock_rest_instance = mock_rest.return_value
+
+        interfaces = [mock_logger_instance, mock_rest_instance]
+        org = "test_org"
+        repositories = [
+            {
+                "name": "repo1",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {
+                    "nodes": [{"title": "issue1", "createdAt": "2023-01-01T00:00:00Z"}]
+                },  # Issue open for > 30 days
+            }
+        ]
+        archive_criteria = ["365", "30", "archive-notice", "5"]
+        notification_content = ["Repository Archive Notice", "This repository will be archived."]
+
+        mock_response = HTTPError()
+        mock_rest_instance.patch.return_value = mock_response
+
+        repositories_archived, issues_created = process_repositories(
+            interfaces, org, repositories, archive_criteria, notification_content
+        )
+
+        assert repositories_archived == 0
+        assert issues_created == 0
+        mock_rest_instance.patch.assert_called_once_with(f"/repos/{org}/repo1", {"archived": True})
 
 
 class TestHandler:
@@ -1017,3 +1122,25 @@ class TestHandler:
         mock_get_repositories.assert_not_called()
         mock_load_archive_rules.assert_not_called()
         mock_process_repositories.assert_not_called()
+
+
+class TestHandleResponse:
+    @patch("src.main.wrapped_logging")
+    def test_handle_response_valid_response(self, mock_logger):
+        mock_response = Response()
+        message = "Error message"
+
+        result = handle_response(mock_logger, mock_response, message)
+
+        assert result is True
+        mock_logger.log_error.assert_not_called()
+
+    @patch("src.main.wrapped_logging")
+    def test_handle_response_invalid_response(self, mock_logger):
+        mock_response = "Invalid response"
+        message = "Error message"
+
+        result = handle_response(mock_logger, mock_response, message)
+
+        assert result is False
+        mock_logger.log_error.assert_called_once_with(message)

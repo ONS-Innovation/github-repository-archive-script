@@ -9,6 +9,7 @@ from typing import Any, Callable, ParamSpec, Tuple, TypeVar, Union
 
 import boto3
 import github_api_toolkit
+from requests import Response
 
 from src.logger import wrapped_logging
 
@@ -345,7 +346,27 @@ def load_archive_rules(archive_rules: dict) -> Tuple[int, int, str, str, int]:
     return archive_threshold, notification_period, notification_issue_tag, exemption_filename, maximum_notifications
 
 
-def process_repositories(
+def handle_response(logger: wrapped_logging, response: Any, message: str) -> bool:
+    """Checks if the given response is a valid response object. If not, it logs an error message.
+
+    Args:
+        logger (wrapped_logging): The logger object.
+        response (Any): The response object to check.
+        message (str): The error message to log if the response is not valid.
+
+    Returns:
+        bool: True if the response is valid, False otherwise.
+    """
+    if type(response) is not Response:
+        logger.log_error(
+            message,
+        )
+        return False
+
+    return True
+
+
+def process_repositories(  # noqa: C901
     interfaces: list[Any],
     org: str,
     repositories: list[dict],
@@ -398,7 +419,10 @@ def process_repositories(
 
                 response = rest.patch(endpoint, archive_params)
 
-                response.raise_for_status()
+                if not handle_response(
+                    logger, response, f"Issue archiving repository. Skipping repository. Error: {response}"
+                ):
+                    continue
 
                 logger.log_info(f"Successfully archived repository {repository['name']}")
 
@@ -432,7 +456,12 @@ def process_repositories(
 
                 response = rest.post(f"/repos/{org}/{repository['name']}/labels", label_params)
 
-                response.raise_for_status()
+                if not handle_response(
+                    logger,
+                    response,
+                    f"Error creating label {notification_issue_tag}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
+                ):
+                    continue
 
                 logger.log_info(f"Created label {notification_issue_tag} for repository {repository['name']}.")
 
@@ -452,7 +481,12 @@ def process_repositories(
 
             response = rest.post(endpoint, issue_params)
 
-            response.raise_for_status()
+            if not handle_response(
+                logger,
+                response,
+                f"Error creating issue for repository {repository['name']}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
+            ):
+                continue
 
             logger.log_info(f"Created issue for repository {repository['name']}.")
 
