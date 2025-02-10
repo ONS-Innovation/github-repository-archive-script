@@ -592,6 +592,7 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     return message
 
+
 # # Dev Only
 # # Uncomment the following line to run the script locally
 # if __name__ == "__main__":
