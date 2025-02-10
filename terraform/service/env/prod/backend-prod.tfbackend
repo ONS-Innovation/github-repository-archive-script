@@ -1,0 +1,6 @@
+# For sandbox environment
+# terraform init -backend-config="env/prod/backend-prod.tfbackend"
+bucket         = "sdp-prod-tf-state"
+key            = "sdp-prod-ecs-github-repository-archive-script/terraform.tfstate"
+region         = "eu-west-2"
+dynamodb_table = "sdp-prod-terraform-state-lock"

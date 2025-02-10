@@ -1,0 +1,5 @@
+# Ignore Dockerfile user due to Lambda
+AVD-DS-0002
+
+# Ignore KMS Encryption
+AVD-AWS-0017
