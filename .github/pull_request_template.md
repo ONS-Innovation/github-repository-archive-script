@@ -1,4 +1,4 @@
-## What type of PR is this? (check all applicable)
+# What type of PR is this? (check all applicable)
 
 - [ ] Refactor
 - [ ] Feature
@@ -6,7 +6,7 @@
 - [ ] Optimization
 - [ ] Documentation Update
 
-### What
+## What
 
 Describe what you have changed and why.
 
