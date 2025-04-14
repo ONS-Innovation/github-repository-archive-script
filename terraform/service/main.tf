@@ -16,6 +16,7 @@ resource "aws_security_group" "lambda_sg" {
     cidr_blocks = ["10.0.0.0/16"] // Allow HTTPS traffic within VPC
   }
   egress {
+    description = "Allow all outbound traffic to any destination"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
