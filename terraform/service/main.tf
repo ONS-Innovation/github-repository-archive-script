@@ -41,6 +41,8 @@ resource "aws_lambda_function" "lambda_function" {
     mode = "Active"
   }
 
+  memory_size = var.lambda_memory
+
   role = aws_iam_role.lambda_function_role.arn
 
   environment {
