@@ -31,7 +31,7 @@ if [[ ${env} != "prod" ]]; then
     env="dev"
 fi
 
-cd cd resource-repo/terraform/service
+cd resource-repo/terraform/service
 
 terraform init -backend-config=env/${env}/backend-${env}.tfbackend -reconfigure
 
