@@ -47,6 +47,6 @@ terraform apply \
 -var "lambda_timeout=$lambda_timeout" \
 -var "github_app_client_id=$github_app_client_id" \
 -var "github_org=$github_org" \
--var lambda_memory=$lambda_memory \
+-var "lambda_memory=$lambda_memory" \
 -var "schedule=$schedule" \
 -auto-approve
