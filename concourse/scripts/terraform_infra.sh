@@ -1,24 +1,24 @@
 set -euo pipefail
 
-aws_account_id=$(echo "$github_repo_archive_secrets" | jq -r .aws_account_id)
-aws_access_key_id=$(echo "$github_repo_archive_secrets" | jq -r .aws_access_key_id)
+aws_account_id=$(echo "$secrets" | jq -r .aws_account_id)
+aws_access_key_id=$(echo "$secrets" | jq -r .aws_access_key_id)
 
-aws_secret_access_key=$(echo "$github_repo_archive_secrets" | jq -r .aws_secret_access_key)
-aws_secret_name=$(echo "$github_repo_archive_secrets" | jq -r .aws_secret_name)
+aws_secret_access_key=$(echo "$secrets" | jq -r .aws_secret_access_key)
+aws_secret_name=$(echo "$secrets" | jq -r .aws_secret_name)
 
-env_name=$(echo "$github_repo_archive_secrets" | jq -r .env_name)
-lambda_name=$(echo "$github_repo_archive_secrets" | jq -r .lambda_name)
+env_name=$(echo "$secrets" | jq -r .env_name)
+lambda_name=$(echo "$secrets" | jq -r .lambda_name)
 
-github_app_client_id=$(echo "$github_repo_archive_secrets" | jq -r .github_app_client_id)
-lambda_arch=$(echo "$github_repo_archive_secrets" | jq -r .lambda_arch)
+github_app_client_id=$(echo "$secrets" | jq -r .github_app_client_id)
+lambda_arch=$(echo "$secrets" | jq -r .lambda_arch)
 
-github_org=$(echo "$github_repo_archive_secrets" | jq -r .github_org)
-container_image=$(echo "$github_repo_archive_secrets" | jq -r .container_image)
+github_org=$(echo "$secrets" | jq -r .github_org)
+container_image=$(echo "$secrets" | jq -r .container_image)
 
-schedule=$(echo "$github_repo_archive_secrets" | jq -r .schedule)
-lambda_timeout=$(echo "$github_repo_archive_secrets" | jq -r .lambda_timeout)
+schedule=$(echo "$secrets" | jq -r .schedule)
+lambda_timeout=$(echo "$secrets" | jq -r .lambda_timeout)
 
-lambda_memory=$(echo "$github_repo_archive_secrets" | jq -r .lambda_memory)
+lambda_memory=$(echo "$secrets" | jq -r .lambda_memory)
 
 export AWS_ACCESS_KEY_ID=$aws_access_key_id
 export AWS_SECRET_ACCESS_KEY=$aws_secret_access_key
