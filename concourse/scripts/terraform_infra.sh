@@ -1,7 +1,5 @@
 set -euo pipefail
 
-apk add --no-cache jq
-
 aws_account_id=$(echo "$github_repo_archive_secrets" | jq -r .aws_account_id)
 aws_access_key_id=$(echo "$github_repo_archive_secrets" | jq -r .aws_access_key_id)
 
