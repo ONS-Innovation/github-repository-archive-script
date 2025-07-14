@@ -1,5 +1,3 @@
-#!/bin/bash
-
 repo_name=${1}
 
 if [[ $# -gt 1 ]]; then
