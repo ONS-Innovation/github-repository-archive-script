@@ -1,3 +1,5 @@
+#!/bin/sh
+
 set -euo pipefail
 
 aws sts assume-role --output text \
@@ -7,6 +9,10 @@ aws sts assume-role --output text \
     | awk -F '\t' '{print $1 > ("AccessKeyId")}{print $2 > ("SecretAccessKey")}{print $3 > ("SessionToken")}'
 
 
-export AWS_ACCESS_KEY_ID="$(cat AccessKeyId)"
-export AWS_SECRET_ACCESS_KEY="$(cat SecretAccessKey)"
-export AWS_SESSION_TOKEN="$(cat SessionToken)"
+AWS_ACCESS_KEY_ID="$(cat AccessKeyId)"
+AWS_SECRET_ACCESS_KEY="$(cat SecretAccessKey)"
+AWS_SESSION_TOKEN="$(cat SessionToken)"
+
+export AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY
+export AWS_SESSION_TOKEN

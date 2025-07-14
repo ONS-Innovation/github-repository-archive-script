@@ -1,3 +1,5 @@
+#!/bin/sh
+
 set -euo pipefail
 
 aws_account_id=$(echo "$secrets" | jq -r .aws_account_id)
