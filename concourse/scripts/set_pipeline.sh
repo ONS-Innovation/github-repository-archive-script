@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 repo_name=${1}
 
 if [[ $# -gt 1 ]]; then
     branch=${2}
-    git rev-parse --verify ${branch}
-    if [[ $? -ne 0 ]]; then
+    git rev-parse --verify "${branch}"
+    if [[ $? -ne 0 ]]; then # shellcheck disable=SC2181
         echo "Branch \"${branch}\" does not exist"
         exit 1
     fi
@@ -25,5 +25,5 @@ else
     tag=$(git tag | tail -n 1)
 fi
 
-fly -t aws-sdp set-pipeline -c concourse/ci.yml -p ${repo_name}-${branch} -v branch=${branch} -v tag=${tag} -v env=${env}
+fly -t aws-sdp set-pipeline -c concourse/ci.yml -p "${repo_name}"-"${branch}" -v branch="${branch}" -v tag="${tag}" -v env="${env}"
 

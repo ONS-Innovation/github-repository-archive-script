@@ -1,7 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 set -euo pipefail
 
+# shellcheck disable=SC2154
 aws_account_id=$(echo "$secrets" | jq -r .aws_account_id)
 aws_access_key_id=$(echo "$secrets" | jq -r .aws_access_key_id)
 
@@ -22,10 +23,13 @@ lambda_timeout=$(echo "$secrets" | jq -r .lambda_timeout)
 
 lambda_memory=$(echo "$secrets" | jq -r .lambda_memory)
 
-export AWS_ACCESS_KEY_ID=$aws_access_key_id
-export AWS_SECRET_ACCESS_KEY=$aws_secret_access_key
+AWS_ACCESS_KEY_ID=$aws_access_key_id
+AWS_SECRET_ACCESS_KEY=$aws_secret_access_key
 
-git config --global url."https://x-access-token:$github_access_token@github.com/".insteadOf "https://github.com/"
+export AWS_ACCESS_KEY_ID
+export AWS_SECRET_ACCESS_KEY
+
+git config --global url."https://x-access-token:$github_access_token@github.com/".insteadOf "https://github.com/" # shellcheck disable=
 
 if [[ ${env} != "prod" ]]; then
     env="dev"
@@ -33,7 +37,7 @@ fi
 
 cd resource-repo/terraform/service
 
-terraform init -backend-config=env/${env}/backend-${env}.tfbackend -reconfigure
+terraform init -backend-config=env/"${env}"/backend-"${env}".tfbackend -reconfigure
 
 terraform apply \
 -var "aws_account_id=$aws_account_id" \
@@ -50,3 +54,4 @@ terraform apply \
 -var "lambda_memory=$lambda_memory" \
 -var "schedule=$schedule" \
 -auto-approve
+# shellcheck disable=SC2154
