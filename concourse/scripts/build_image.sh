@@ -1,3 +1,5 @@
+#!/bin/sh
+
 set -euo pipefail
 
 export STORAGE_DRIVER=vfs

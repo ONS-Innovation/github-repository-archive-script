@@ -1,3 +1,5 @@
+#!/bin/sh
+
 set -euo pipefail
 
 # shellcheck disable=SC2154
