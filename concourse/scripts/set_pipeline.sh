@@ -1,4 +1,4 @@
-#!/bin/sh
+# shellcheck disable=SC3040,SC2154
 
 repo_name=${1}
 
