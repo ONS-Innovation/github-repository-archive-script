@@ -1,4 +1,4 @@
-# shellcheck disable=SC3040,SC2154
+# shellcheck disable=SC3040,SC2154,SC2148
 
 set -euo pipefail
 
