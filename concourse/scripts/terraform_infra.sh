@@ -16,7 +16,6 @@ github_app_client_id=$(echo "$secrets" | jq -r .github_app_client_id)
 lambda_arch=$(echo "$secrets" | jq -r .lambda_arch)
 
 github_org=$(echo "$secrets" | jq -r .github_org)
-container_image=$(echo "$secrets" | jq -r .container_image)
 
 schedule=$(echo "$secrets" | jq -r .schedule)
 lambda_timeout=$(echo "$secrets" | jq -r .lambda_timeout)
