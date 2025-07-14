@@ -1,3 +1,4 @@
+---
 resources:
   - name: resource-repo
     type: git
@@ -69,7 +70,7 @@ jobs:
                 if [[ "((env))" == "prod" ]]; then
                   tag=$(curl "https://api.github.com/repos/ONS-Innovation/github-repository-archive-script/releases" | jq -r '.[0].tag_name')
                   export tag
-                else 
+                else
                   export tag=((tag))
                 fi
                 chmod u+x ./resource-repo/concourse/scripts/terraform_infra.sh
