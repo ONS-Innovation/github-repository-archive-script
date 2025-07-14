@@ -29,7 +29,8 @@ AWS_SECRET_ACCESS_KEY=$aws_secret_access_key
 export AWS_ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY
 
-git config --global url."https://x-access-token:$github_access_token@github.com/".insteadOf "https://github.com/" # shellcheck disable=
+# shellcheck disable=SC2086
+git config --global url."https://x-access-token:$github_access_token@github.com/".insteadOf "https://github.com/"
 
 if [[ ${env} != "prod" ]]; then
     env="dev"
@@ -39,6 +40,7 @@ cd resource-repo/terraform/service
 
 terraform init -backend-config=env/"${env}"/backend-"${env}".tfbackend -reconfigure
 
+# shellcheck disable=SC2154
 terraform apply \
 -var "aws_account_id=$aws_account_id" \
 -var "aws_access_key_id=$aws_access_key_id" \
@@ -54,4 +56,3 @@ terraform apply \
 -var "lambda_memory=$lambda_memory" \
 -var "schedule=$schedule" \
 -auto-approve
-# shellcheck disable=SC2154

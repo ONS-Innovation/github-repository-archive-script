@@ -5,33 +5,33 @@ A Python utility used to archive old, unused GitHub repositories from an organis
 ## Table of Contents
 
 - [GitHub Repository Archive Script](#github-repository-archive-script)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-  - [Makefile](#makefile)
-  - [Development](#development)
-  - [Running the Project](#running-the-project)
-    - [Containerised (Recommended)](#containerised-recommended)
-    - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
-  - [Deployment](#deployment)
-    - [Overview](#overview)
-    - [Deployment Prerequisites](#deployment-prerequisites)
-    - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
-    - [Deploying the Lambda](#deploying-the-lambda)
-    - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
-  - [Linting and Testing](#linting-and-testing)
-    - [GitHub Actions](#github-actions)
-    - [Running Tests Locally](#running-tests-locally)
+    - [Table of Contents](#table-of-contents)
+    - [Prerequisites](#prerequisites)
+    - [Makefile](#makefile)
+    - [Development](#development)
+    - [Running the Project](#running-the-project)
+        - [Containerised (Recommended)](#containerised-recommended)
+        - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
+    - [Deployment](#deployment)
+        - [Overview](#overview)
+        - [Deployment Prerequisites](#deployment-prerequisites)
+        - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
+        - [Deploying the Lambda](#deploying-the-lambda)
+        - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
+    - [Linting and Testing](#linting-and-testing)
+        - [GitHub Actions](#github-actions)
+        - [Running Tests Locally](#running-tests-locally)
 
 ## Prerequisites
 
 - A Docker Daemon (Colima is recommended)
-  - [Colima](https://github.com/abiosoft/colima)
+    - [Colima](https://github.com/abiosoft/colima)
 - Terraform (For deployment)
-  - [Terraform](https://www.terraform.io/)
+    - [Terraform](https://www.terraform.io/)
 - Python >3.12
-  - [Python](https://www.python.org/)
+    - [Python](https://www.python.org/)
 - Make
-  - [GNU make](https://www.gnu.org/software/make/manual/make.html#Overview)
+    - [GNU make](https://www.gnu.org/software/make/manual/make.html#Overview)
 
 ## Makefile
 
@@ -119,7 +119,7 @@ Before the doing the following, make sure your Daemon is running. If using Colim
     When running the container, you are required to pass some environment variable.
 
     | Variable                    | Description                                                                               |
-    |-----------------------------|-------------------------------------------------------------------------------------------|
+    | --------------------------- | ----------------------------------------------------------------------------------------- |
     | GITHUB_ORG                  | The organisation you would like to run the tool in.                                       |
     | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API. |
     | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                     |
@@ -168,7 +168,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
     ...
     ```
 
-    **Please Note:** If uncommenting the above in `main.py`, make sure you re-comment the code *before* pushing back to GitHub.
+    **Please Note:** If uncommenting the above in `main.py`, make sure you re-comment the code _before_ pushing back to GitHub.
 
 2. Export the required environment variables:
 
@@ -268,6 +268,7 @@ Within the terraform directory, there is a [service](./terraform/service/) subdi
     ```
 
 2. Fill out the appropriate environment variables file
+
     - `env/dev/dev.tfvars` for sdp-dev.
     - `env/prod/prod.tfvars` for sdp-prod.
 
@@ -328,6 +329,7 @@ terraform destroy -var-file=env/dev/dev.tfvars
 ### Deployments with Concourse
 
 #### Allowlisting your IP
+
 To setup the deployment pipeline with concourse, you must first allowlist your IP address on the Concourse
 server. IP addresses are flushed everyday at 00:00 so this must be done at the beginning of every working day
 whenever the deployment pipeline needs to be used. Follow the instructions on the Confluence page (SDP Homepage > SDP Concourse > Concourse Login) to
@@ -335,19 +337,23 @@ login. All our pipelines run on sdp-pipeline-prod, whereas sdp-pipeline-dev is t
 changes to Concourse instance itself. Make sure to export all necessary environment variables from sdp-pipeline-prod (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN).
 
 #### Setting up a pipeline
+
 When setting up our pipelines, we use ecs-infra-user on sdp-dev to be able to interact with our infrastructure on AWS. The credentials for this are stored on
 AWS Secrets Manager so you do not need to set up anything yourself.
 
 To set the pipeline, run the following script:
+
 ```bash
 chmod u+x ./concourse/scripts/set_pipeline.sh
 ./concourse/scripts/set_pipeline.sh github-repo-archive-script
 ```
+
 Note that you only have to run chmod the first time running the script in order to give permissions.
 This script will set the branch and pipeline name to whatever branch you are currently on. It will also set the image tag on ECR to the current commit hash at the time of setting the pipeline.
 
 The pipeline name itself will usually follow a pattern as follows: `<repo-name>-<branch-name>`
 If you wish to set a pipeline for another branch without checking out, you can run the following:
+
 ```bash
 ./concourse/scripts/set_pipeline.sh github-repo-archive-script <branch_name>
 ```
@@ -355,7 +361,9 @@ If you wish to set a pipeline for another branch without checking out, you can r
 If the branch you are deploying is "main" or "master", it will trigger a deployment to the sdp-prod environment. To set the ECR image tag, you must draft a Github release pointing to the latest release of the main/master branch that has a tag in the form of vX.Y.Z. Drafting up a release will automatically deploy the latest version of the main/master branch with the associated release tag, but you can also manually trigger a build through the Concourse UI or the terminal prompt.
 
 #### Triggering a pipeline
+
 Once the pipeline has been set, you can manually trigger a build on the Concourse UI, or run the following command:
+
 ```bash
 fly -t aws-sdp trigger-job -j github-repo-archive-script-<branch-name>/build-and-push
 ```

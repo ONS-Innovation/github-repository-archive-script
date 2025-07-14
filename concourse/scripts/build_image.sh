@@ -10,8 +10,11 @@ container_image=$(echo "$secrets" | jq -r .container_image)
 # shellcheck disable=SC2154
 aws ecr get-login-password --region eu-west-2 | podman --storage-driver=vfs login --username AWS --password-stdin "${aws_account_id}".dkr.ecr.eu-west-2.amazonaws.com
 
+# shellcheck disable=SC2154
 podman build -t "${container_image}":"${tag}" resource-repo
 
-podman tag "${container_image}":"${tag}" "${aws_account_id}".dkr.ecr.eu-west-2.amazonaws.com/"${container_image}":"${tag}"
-podman push "${aws_account_id}".dkr.ecr.eu-west-2.amazonaws.com/"${container_image}":"${tag}"
 # shellcheck disable=SC2154
+podman tag "${container_image}":"${tag}" "${aws_account_id}".dkr.ecr.eu-west-2.amazonaws.com/"${container_image}":"${tag}"
+
+# shellcheck disable=SC2154
+podman push "${aws_account_id}".dkr.ecr.eu-west-2.amazonaws.com/"${container_image}":"${tag}"
