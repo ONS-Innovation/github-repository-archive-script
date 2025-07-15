@@ -1,4 +1,7 @@
 ---
+# Kics linting thinks that the "password" and "github_access_token" keys are secrets, but they are not.
+# These instances are ignored appropriately.
+
 resources:
   - name: resource-repo
     type: git
@@ -6,7 +9,8 @@ resources:
     source:
       uri: https://github.com/ONS-Innovation/github-repository-archive-script
       username: ((github_access_token))
-      password: x-oauth-basic
+      # kics-scan ignore-line
+      password: x-oauth-basic # checkov:skip=CKV_SECRET_6:Checkov thinks this is a secret, but it is not
       branch: ((branch))
 
 jobs:
@@ -59,6 +63,7 @@ jobs:
             - name: resource-repo
           params:
             secrets: ((sdp_((env))_github_repo_archive_secrets))
+            # kics-scan ignore-line
             github_access_token: ((github_access_token))
           run:
             path: sh
