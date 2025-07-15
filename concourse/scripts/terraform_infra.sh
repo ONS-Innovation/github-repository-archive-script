@@ -41,17 +41,17 @@ terraform init -backend-config=env/"${env}"/backend-"${env}".tfbackend -reconfig
 
 # shellcheck disable=SC2154
 terraform apply \
--var "aws_account_id=$aws_account_id" \
--var "aws_access_key_id=$aws_access_key_id" \
--var "aws_secret_access_key=$aws_secret_access_key" \
--var "aws_secret_name=$aws_secret_name" \
--var "env_name=$env_name" \
--var "lambda_version=${tag}" \
--var "lambda_name=$lambda_name" \
--var "lambda_arch=$lambda_arch" \
--var "lambda_timeout=$lambda_timeout" \
--var "github_app_client_id=$github_app_client_id" \
--var "github_org=$github_org" \
--var "lambda_memory=$lambda_memory" \
--var "schedule=$schedule" \
--auto-approve
+    -var "aws_account_id=$aws_account_id" \
+    -var "aws_access_key_id=$aws_access_key_id" \
+    -var "aws_secret_access_key=$aws_secret_access_key" \
+    -var "aws_secret_name=$aws_secret_name" \
+    -var "env_name=$env_name" \
+    -var "lambda_version=${tag}" \
+    -var "lambda_name=$lambda_name" \
+    -var "lambda_arch=$lambda_arch" \
+    -var "lambda_timeout=$lambda_timeout" \
+    -var "github_app_client_id=$github_app_client_id" \
+    -var "github_org=$github_org" \
+    -var "lambda_memory=$lambda_memory" \
+    -var "schedule=$schedule" \
+    -auto-approve
