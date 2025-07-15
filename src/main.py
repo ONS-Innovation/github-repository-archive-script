@@ -574,7 +574,12 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
         "   - If the file already exists, please update it with the latest information. \n",
         "2. Close this issue. \n\n",
         f"After these actions, the repository will be exempt from archive for another {archive_threshold} days. \n\n",
-        "If you have any questions, please contact an organization administrator.",
+        "## Manual Archive \n\n",
+        "If you wish to archive this repository manually, please ensure the following: \n",
+        "1. A notice is added to the repository `README.md` file indicating that the repository is archived. \n",
+        "2. All issues and pull requests are closed (Optional but strongly recommended). \n",
+        "3. Repository Admins / CODEOWNERS are up to date before archiving. This will make it easier to unarchive the repository in the future if needed. \n\n",
+        "After these actions, you can archive the repository by going to the repository settings and selecting 'Archive this repository'. \n\n",
     )
 
     notification_issue_body = "".join(notification_issue_body_tuple)
