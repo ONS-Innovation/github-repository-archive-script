@@ -14,6 +14,7 @@ clean: ## Clean the temporary files.
 	rm -rf .coverage
 	rm -rf .ruff_cache
 	rm -rf megalinter-reports
+	rm -rf debug.log
 
 .PHONY: format
 format:  ## Format the code.
