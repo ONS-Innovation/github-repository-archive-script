@@ -63,7 +63,7 @@ variable "schedule" {
 variable "log_retention_days" {
   description = "Lambda log retention in days"
   type        = number
-  default     = 30
+  default     = 90
 }
 
 variable "github_org" {

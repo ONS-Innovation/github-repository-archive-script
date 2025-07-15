@@ -366,16 +366,30 @@ def handle_response(logger: wrapped_logging, response: Any, message: str) -> boo
     return True
 
 
-def process_repositories(  # noqa: C901
+def process_repositories(  # noqa: C901, PLR0915
     interfaces: list[Any],
     org: str,
     repositories: list[dict],
     archive_criteria: list[str],
     notification_content: list[str],
-) -> Tuple[int, int]:
+) -> Tuple[list, list]:
+    """Processes the repositories to archive them if they meet the criteria, or create issues to notify the owners/contributors.
 
+    Args:
+        interfaces (list[Any]): A list containing the logger and the REST interface for the GitHub API.
+        org (str): The name of the GitHub organization.
+        repositories (list[dict]): A list of repositories to process.
+        archive_criteria (list[str]): A list containing the archive threshold, notification period, notification issue tag, and maximum notifications.
+        notification_content (list[str]): A list containing the notification issue title and body.
+
+    Returns:
+        Tuple[list, list]: A tuple containing two lists:
+            - A list of repositories that were archived.
+            - A list of repositories for which issues were created.
+    """
     issues_created = 0
-    repositories_archived = 0
+    repository_issues_created = []
+    repositories_archived = []
 
     logger, rest = interfaces
     archive_threshold, notification_period, notification_issue_tag, maximum_notifications = archive_criteria
@@ -426,7 +440,7 @@ def process_repositories(  # noqa: C901
 
                 logger.log_info(f"Successfully archived repository {repository['name']}")
 
-                repositories_archived += 1
+                repositories_archived.append(repository["name"])
 
                 continue
 
@@ -491,6 +505,7 @@ def process_repositories(  # noqa: C901
             logger.log_info(f"Created issue for repository {repository['name']}.")
 
             issues_created += 1
+            repository_issues_created.append(repository["name"])
 
         elif issues_created == int(maximum_notifications) and not notice_issued:
             logger.log_info("Maximum number of notifications reached. No more notifications will be made.")
@@ -499,7 +514,7 @@ def process_repositories(  # noqa: C901
         else:
             logger.log_info("Skipping repository. Maximum number of notifications reached.")
 
-    return repositories_archived, issues_created
+    return repositories_archived, repository_issues_created
 
 
 def handler(event, context) -> str:  # type: ignore[no-untyped-def]
@@ -626,11 +641,14 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
     ]
     notification_content = [notification_issue_title, notification_issue_body]
 
-    repositories_archived, issues_created = process_repositories(
+    repositories_archived, repository_issues_created = process_repositories(
         interfaces, org, repositories, archive_criteria, notification_content
     )
 
-    message = f"Script completed. {len(repositories)} repositories checked. {issues_created} issues created. {repositories_archived} repositories archived."
+    logger.log_info(f"Repositories archived: {repositories_archived}")
+    logger.log_info(f"Issues created: {repository_issues_created}")
+
+    message = f"Script completed. {len(repositories)} repositories checked. {len(repository_issues_created)} issues created. {len(repositories_archived)} repositories archived."
 
     logger.log_info(message)
 
