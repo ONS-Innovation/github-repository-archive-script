@@ -569,8 +569,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 1
-        assert issues_created == 0
+        assert repositories_archived == ["repo1"]
+        assert issues_created == []
         mock_rest_instance.patch.assert_called_once_with(f"/repos/{org}/repo1", {"archived": True})
 
     @patch("src.main.wrapped_logging")
@@ -602,8 +602,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 1
+        assert repositories_archived == []
+        assert issues_created == ["repo1"]
         mock_rest_instance.post.assert_called_once_with(
             f"/repos/{org}/repo1/issues",
             {
@@ -635,8 +635,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 0
+        assert repositories_archived == []
+        assert issues_created == []
         mock_rest_instance.post.assert_not_called()
         mock_rest_instance.patch.assert_not_called()
 
@@ -693,8 +693,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 5  # noqa: PLR2004
+        assert repositories_archived == []
+        assert issues_created == ["repo1", "repo2", "repo3", "repo4", "repo5"]  # noqa: PLR2004
         assert mock_rest_instance.post.call_count == 5  # noqa: PLR2004
         mock_logger_instance.log_info.assert_called_with(
             "Maximum number of notifications reached. No more notifications will be made."
@@ -731,8 +731,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 0
+        assert repositories_archived == []
+        assert issues_created == []
         mock_rest_instance.post.assert_not_called()
         mock_rest_instance.patch.assert_not_called()
 
@@ -794,8 +794,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 5  # noqa: PLR2004
+        assert repositories_archived == []
+        assert issues_created == ["repo1", "repo2", "repo3", "repo4", "repo5"]  # noqa: PLR2004
         assert mock_rest_instance.post.call_count == 5  # noqa: PLR2004
         mock_logger_instance.log_info.assert_called_with(
             "Skipping repository. Maximum number of notifications reached."
@@ -832,8 +832,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 1
+        assert repositories_archived == []
+        assert issues_created == ["repo1"]
 
         # Assert that there was 2 post requests for 1 repository
         # This means that the label was created and the issue was created
@@ -870,8 +870,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 1
+        assert repositories_archived == []
+        assert issues_created == ["repo1"]
 
         # Assert that there was 1 post request for 1 repository
         # This means that the issue was created but not the label since it already exists
@@ -908,8 +908,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 0
+        assert repositories_archived == []
+        assert issues_created == []
 
         # Assert that there was 1 post request for 1 repository
         # This means that the label creation failed and the issue was not created
@@ -946,8 +946,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 0
+        assert repositories_archived == []
+        assert issues_created == []
 
         # Assert that there was 1 post request for 1 repository
         # This means that the issue creation failed
@@ -981,8 +981,8 @@ class TestProcessRepositories:
             interfaces, org, repositories, archive_criteria, notification_content
         )
 
-        assert repositories_archived == 0
-        assert issues_created == 0
+        assert repositories_archived == []
+        assert issues_created == []
         mock_rest_instance.patch.assert_called_once_with(f"/repos/{org}/repo1", {"archived": True})
 
 
@@ -1042,7 +1042,7 @@ class TestHandler:
             ["ArchiveExemption.txt", "ArchiveExemption.md"],
             5,
         )
-        mock_process_repositories.return_value = (1, 1)
+        mock_process_repositories.return_value = (["Repo1"], ["Repo2"])
 
         # Call the handler function
         result = handler({}, {})
@@ -1210,7 +1210,7 @@ class TestCloudConfig:
         mock_github_interface.return_value = MagicMock()
         mock_get_repositories.return_value = ([{"name": "repo1"}], 1)
         mock_load_archive_rules.return_value = (365, 30, "archive-notice", ["DO_NOT_ARCHIVE"], 5)
-        mock_process_repositories.return_value = (1, 2)
+        mock_process_repositories.return_value = (["repo1"], ["repo2", "repo3"])
 
         result = handler(None, None)
 
@@ -1288,7 +1288,7 @@ class TestCloudConfig:
             mock_github_interface.return_value = MagicMock()
             mock_get_repositories.return_value = ([{"name": "repo1"}], 1)
             mock_load_archive_rules.return_value = (365, 30, "archive-notice", ["DO_NOT_ARCHIVE"], 5)
-            mock_process_repositories.return_value = (1, 2)
+            mock_process_repositories.return_value = (["repo1"], ["repo2", "repo3"])
 
             result = handler(None, None)
 
