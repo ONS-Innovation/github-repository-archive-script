@@ -18,6 +18,12 @@ variable "aws_secret_name" {
   type        = string
 }
 
+variable "aws_bucket_name" {
+  description = "The name of the S3 bucket which the cloud config is stored in"
+  type        = string
+  default     = "${env_name}-github-repository-archive-script"
+}
+
 variable "env_name" {
   description = "AWS environment"
   type        = string

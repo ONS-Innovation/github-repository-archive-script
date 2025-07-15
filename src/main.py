@@ -512,6 +512,39 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
     features = get_dict_value(config, "features")
     archive_rules = get_dict_value(config, "archive_configuration")
 
+    # Create a Boto3 session
+
+    session = boto3.session.Session()
+
+    # Create Boto3 S3 client
+
+    s3 = session.client(service_name="s3")
+
+    # Check whether to use local config or cloud config
+
+    if not get_dict_value(features, "use_local_config"):
+
+        bucket_name = os.getenv("S3_BUCKET_NAME")
+
+        if not bucket_name:
+            error_message = "S3_BUCKET_NAME environment variable not set. Please check your environment variables."
+            raise Exception(error_message)
+
+        try:
+            response = s3.get_object(
+                Bucket=bucket_name,
+                Key="config.json",
+            )
+        except s3.exceptions.NoSuchKey as e:
+            error_message = (
+                f"Configuration file not found in S3 bucket {bucket_name}. Please check the bucket contents."
+            )
+            raise Exception(error_message) from e
+
+        config = json.loads(response["Body"].read().decode("utf-8"))
+        features = get_dict_value(config, "features")
+        archive_rules = get_dict_value(config, "archive_configuration")
+
     # Initialise logging
 
     debug = get_dict_value(features, "show_log_locally")
@@ -528,9 +561,7 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     # Create Boto3 Secret Manager client
 
-    session = boto3.session.Session()
     secret_manager = session.client(service_name="secretsmanager", region_name=aws_default_region)
-
     logger.log_info("Boto3 Secret Manager client created.")
 
     # Create GitHub API interfaces (GraphQL and REST)
@@ -567,8 +598,8 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
         "## Important Notice \n\n",
         f"This repository has not been updated in over {archive_threshold} days and will be archived in {notification_period} days if no action is taken. \n",
         "## Actions Required to Prevent Archive \n\n",
-        f"1. Update the repository by creating/updating an exemption file. \n",
-        f"   - The exemption file should be named one of the following: \n",
+        "1. Update the repository by creating/updating an exemption file. \n",
+        "   - The exemption file should be named one of the following: \n",
         f"{''.join(formatted_filenames)}\n",
         "   - This file should contain the reason why the repository should not be archived. \n",
         "   - If the file already exists, please update it with the latest information. \n",

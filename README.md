@@ -18,6 +18,10 @@ A Python utility used to archive old, unused GitHub repositories from an organis
     - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
     - [Deploying the Lambda](#deploying-the-lambda)
     - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
+    - [Deployments with Concourse](#deployments-with-concourse)
+      - [Allowlisting your IP](#allowlisting-your-ip)
+      - [Setting up a pipeline](#setting-up-a-pipeline)
+      - [Triggering a pipeline](#triggering-a-pipeline)
   - [Linting and Testing](#linting-and-testing)
     - [GitHub Actions](#github-actions)
     - [Running Tests Locally](#running-tests-locally)
@@ -112,19 +116,21 @@ Before the doing the following, make sure your Daemon is running. If using Colim
     -e AWS_SECRET_NAME=<secret_name> \
     -e GITHUB_ORG=<org> \
     -e GITHUB_APP_CLIENT_ID=<client_id> \
+    -e S3_BUCKET_NAME=<bucket_name>\
     -e AWS_LAMBDA_FUNCTION_TIMEOUT=300
     github-repository-archive-script
     ```
 
     When running the container, you are required to pass some environment variable.
 
-    | Variable                    | Description                                                                               |
-    |-----------------------------|-------------------------------------------------------------------------------------------|
-    | GITHUB_ORG                  | The organisation you would like to run the tool in.                                       |
-    | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API. |
-    | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                     |
-    | AWS_SECRET_NAME             | The name of the AWS Secret Manager Secret to get.                                         |
-    | AWS_LAMBDA_FUNCTION_TIMEOUT | The timeout time in seconds (Default: 300s / 5 minutes).                                  |
+    | Variable                    | Description                                                                                        |
+    |-----------------------------|----------------------------------------------------------------------------------------------------|
+    | GITHUB_ORG                  | The organisation you would like to run the tool in.                                                |
+    | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API.          |
+    | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                              |
+    | AWS_SECRET_NAME             | The name of the AWS Secret Manager Secret to get.                                                  |
+    | AWS_BUCKET_NAME             | The name of the S3 bucket which has the cloud config in (Only used when `use_local_config=False`). |
+    | AWS_LAMBDA_FUNCTION_TIMEOUT | The timeout time in seconds (Default: 300s / 5 minutes).                                           |
 
     Once the container is running, a local endpoint is created at `localhost:9000/2015-03-31/functions/function/invocations`.
 
@@ -177,6 +183,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
     export AWS_SECRET_ACCESS_KEY=<secret_access_key>
     export AWS_DEFAULT_REGION=eu-west-2
     export AWS_SECRET_NAME=<secret_name>
+    export S3_BUCKET_NAME=<bucket_name>
     export GITHUB_ORG=<org>
     export GITHUB_APP_CLIENT_ID=<client_id>
     ```

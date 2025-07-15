@@ -1019,7 +1019,7 @@ class TestHandler:
     ):
         # Mocking the return values
         mock_get_config_file.return_value = {
-            "features": {"show_log_locally": True},
+            "features": {"show_log_locally": True, "use_local_config": True},
             "archive_configuration": {"some_key": "some_value"},
         }
         mock_get_dict_value.side_effect = lambda d, k: d[k]
@@ -1035,7 +1035,13 @@ class TestHandler:
         mock_github_graphql_interface.return_value = MagicMock()
         mock_github_interface.return_value = MagicMock()
         mock_get_repositories.return_value = (["repo1", "repo2"], 1)
-        mock_load_archive_rules.return_value = (365, 30, "archive-notice", "DO_NOT_ARCHIVE", 5)
+        mock_load_archive_rules.return_value = (
+            365,
+            30,
+            "archive-notice",
+            ["ArchiveExemption.txt", "ArchiveExemption.md"],
+            5,
+        )
         mock_process_repositories.return_value = (1, 1)
 
         # Call the handler function
@@ -1048,9 +1054,11 @@ class TestHandler:
         mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "archive_configuration")
         mock_wrapped_logging.assert_called_once_with(True)
         mock_get_environment_variables.assert_called_once()
-        mock_boto3_session.return_value.client.assert_called_once_with(
+        assert mock_boto3_session.return_value.client.call_count == 2
+        mock_boto3_session.return_value.client.assert_any_call(
             service_name="secretsmanager", region_name="mock_aws_default_region"
         )
+        mock_boto3_session.return_value.client.assert_any_call(service_name="s3")
         mock_get_access_token.assert_called_once_with(
             mock_boto3_session.return_value.client.return_value,
             "mock_aws_secret_name",
@@ -1073,7 +1081,7 @@ class TestHandler:
             ["365", "30", "archive-notice", "5"],
             [
                 "Repository Archive Notice",
-                "## Important Notice \n\nThis repository has not been updated in over 365 days and will be archived in 30 days if no action is taken. \n## Actions Required to Prevent Archive \n\n1. Update the repository by creating/updating a file called `DO_NOT_ARCHIVE`. \n   - This file should contain the reason why the repository should not be archived. \n   - If the file already exists, please update it with the latest information. \n2. Close this issue. \n\nAfter these actions, the repository will be exempt from archive for another 365 days. \n\nIf you have any questions, please contact an organization administrator.",
+                "## Important Notice \n\nThis repository has not been updated in over 365 days and will be archived in 30 days if no action is taken. \n## Actions Required to Prevent Archive \n\n1. Update the repository by creating/updating an exemption file. \n   - The exemption file should be named one of the following: \n       - ArchiveExemption.txt \n       - ArchiveExemption.md \n\n   - This file should contain the reason why the repository should not be archived. \n   - If the file already exists, please update it with the latest information. \n2. Close this issue. \n\nAfter these actions, the repository will be exempt from archive for another 365 days. \n\n## Manual Archive \n\nIf you wish to archive this repository manually, please ensure the following: \n1. A notice is added to the repository `README.md` file indicating that the repository is archived. \n2. All issues and pull requests are closed (Optional but strongly recommended). \n3. Repository Admins / CODEOWNERS are up to date before archiving. This will make it easier to unarchive the repository in the future if needed. \n\nAfter these actions, you can archive the repository by going to the repository settings and selecting 'Archive this repository'. \n\n",
             ],
         )
 
@@ -1144,3 +1152,262 @@ class TestHandleResponse:
 
         assert result is False
         mock_logger.log_error.assert_called_once_with(message)
+
+
+class TestCloudConfig:
+    @patch("src.main.get_config_file")
+    @patch("src.main.get_dict_value")
+    @patch("boto3.session.Session")
+    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_access_token")
+    @patch("github_api_toolkit.github_graphql_interface")
+    @patch("github_api_toolkit.github_interface")
+    @patch("src.main.get_repositories")
+    @patch("src.main.load_archive_rules")
+    @patch("src.main.process_repositories")
+    @patch("src.main.wrapped_logging")
+    def test_handler_success(
+        self,
+        mock_wrapped_logging,
+        mock_process_repositories,
+        mock_load_archive_rules,
+        mock_get_repositories,
+        mock_github_interface,
+        mock_github_graphql_interface,
+        mock_get_access_token,
+        mock_get_environment_variables,
+        mock_boto3_session,
+        mock_get_dict_value,
+        mock_get_config_file,
+    ):
+        # Setup mocks
+        mock_logger = MagicMock()
+        mock_wrapped_logging.return_value = mock_logger
+
+        mock_config = {"features": {"use_local_config": True, "show_log_locally": False}, "archive_configuration": {}}
+        mock_get_config_file.return_value = mock_config
+
+        def get_dict_value_side_effect(config, key):
+            if key == "features":
+                return config["features"]
+            if key == "archive_configuration":
+                return config["archive_configuration"]
+            if key == "use_local_config":
+                return config["use_local_config"]
+            if key == "show_log_locally":
+                return config["show_log_locally"]
+            return None
+
+        mock_get_dict_value.side_effect = get_dict_value_side_effect
+
+        mock_session = MagicMock()
+        mock_boto3_session.return_value = mock_session
+        mock_session.client.return_value = MagicMock()
+
+        mock_get_environment_variables.return_value = ("org", "client_id", "region", "secret_name")
+        mock_get_access_token.return_value = ("token", "other")
+        mock_github_graphql_interface.return_value = MagicMock()
+        mock_github_interface.return_value = MagicMock()
+        mock_get_repositories.return_value = ([{"name": "repo1"}], 1)
+        mock_load_archive_rules.return_value = (365, 30, "archive-notice", ["DO_NOT_ARCHIVE"], 5)
+        mock_process_repositories.return_value = (1, 2)
+
+        result = handler(None, None)
+
+        assert "Script completed." in result
+        assert "repositories checked" in result
+        assert "issues created" in result
+        assert "repositories archived" in result
+        mock_logger.log_info.assert_any_call("Initialised logging.")
+        mock_logger.log_info.assert_any_call("Environment variables retrieved.")
+        mock_logger.log_info.assert_any_call("Access token for GitHub API retrieved.")
+        mock_logger.log_info.assert_any_call("GitHub API interfaces created.")
+        mock_logger.log_info.assert_any_call("Found 1 repositories in 1 page(s).")
+        mock_logger.log_info.assert_any_call(result)
+
+    @patch("src.main.get_config_file")
+    @patch("src.main.get_dict_value")
+    @patch("boto3.session.Session")
+    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_access_token")
+    @patch("github_api_toolkit.github_graphql_interface")
+    @patch("github_api_toolkit.github_interface")
+    @patch("src.main.get_repositories")
+    @patch("src.main.load_archive_rules")
+    @patch("src.main.process_repositories")
+    @patch("src.main.wrapped_logging")
+    def test_handler_s3_config(
+        self,
+        mock_wrapped_logging,
+        mock_process_repositories,
+        mock_load_archive_rules,
+        mock_get_repositories,
+        mock_github_interface,
+        mock_github_graphql_interface,
+        mock_get_access_token,
+        mock_get_environment_variables,
+        mock_boto3_session,
+        mock_get_dict_value,
+        mock_get_config_file,
+    ):
+        # Setup mocks
+        mock_logger = MagicMock()
+        mock_wrapped_logging.return_value = mock_logger
+
+        # Initial config with use_local_config False
+        config = {"features": {"use_local_config": False, "show_log_locally": False}, "archive_configuration": {}}
+        mock_get_config_file.return_value = config
+
+        def get_dict_value_side_effect(config, key):
+            if key == "features":
+                return config["features"]
+            if key == "archive_configuration":
+                return config["archive_configuration"]
+            if key == "use_local_config":
+                return config["use_local_config"]
+            if key == "show_log_locally":
+                return config["show_log_locally"]
+            return None
+
+        mock_get_dict_value.side_effect = get_dict_value_side_effect
+
+        mock_session = MagicMock()
+        mock_boto3_session.return_value = mock_session
+        mock_s3_client = MagicMock()
+        mock_session.client.side_effect = [mock_s3_client, MagicMock()]  # s3, secretsmanager
+
+        # Patch os.environ for S3_BUCKET_NAME
+        with patch.dict(os.environ, {"S3_BUCKET_NAME": "bucket"}):
+            mock_s3_client.get_object.return_value = {
+                "Body": MagicMock(read=MagicMock(return_value=json.dumps(config).encode("utf-8")))
+            }
+
+            mock_get_environment_variables.return_value = ("org", "client_id", "region", "secret_name")
+            mock_get_access_token.return_value = ("token", "other")
+            mock_github_graphql_interface.return_value = MagicMock()
+            mock_github_interface.return_value = MagicMock()
+            mock_get_repositories.return_value = ([{"name": "repo1"}], 1)
+            mock_load_archive_rules.return_value = (365, 30, "archive-notice", ["DO_NOT_ARCHIVE"], 5)
+            mock_process_repositories.return_value = (1, 2)
+
+            result = handler(None, None)
+
+            assert "Script completed." in result
+            assert "repositories checked" in result
+
+    @patch("src.main.get_config_file")
+    @patch("src.main.get_dict_value")
+    @patch("boto3.session.Session")
+    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_access_token")
+    @patch("github_api_toolkit.github_graphql_interface")
+    @patch("github_api_toolkit.github_interface")
+    @patch("src.main.get_repositories")
+    @patch("src.main.load_archive_rules")
+    @patch("src.main.process_repositories")
+    @patch("src.main.wrapped_logging")
+    def test_handler_s3_config_no_bucket(
+        self,
+        mock_wrapped_logging,
+        mock_process_repositories,
+        mock_load_archive_rules,
+        mock_get_repositories,
+        mock_github_interface,
+        mock_github_graphql_interface,
+        mock_get_access_token,
+        mock_get_environment_variables,
+        mock_boto3_session,
+        mock_get_dict_value,
+        mock_get_config_file,
+    ):
+        # Setup mocks
+        mock_logger = MagicMock()
+        mock_wrapped_logging.return_value = mock_logger
+
+        config = {"features": {"use_local_config": False, "show_log_locally": False}, "archive_configuration": {}}
+        mock_get_config_file.return_value = config
+
+        def get_dict_value_side_effect(config, key):
+            if key == "features":
+                return config["features"]
+            if key == "archive_configuration":
+                return config["archive_configuration"]
+            if key == "use_local_config":
+                return config["use_local_config"]
+            if key == "show_log_locally":
+                return config["show_log_locally"]
+            return None
+
+        mock_get_dict_value.side_effect = get_dict_value_side_effect
+
+        mock_session = MagicMock()
+        mock_boto3_session.return_value = mock_session
+        mock_session.client.return_value = MagicMock()
+
+        # S3_BUCKET_NAME not set
+        with patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(Exception) as excinfo:
+                handler(None, None)
+            assert "S3_BUCKET_NAME environment variable not set" in str(excinfo.value)
+
+    @patch("src.main.get_config_file")
+    @patch("src.main.get_dict_value")
+    @patch("boto3.session.Session")
+    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_access_token")
+    @patch("github_api_toolkit.github_graphql_interface")
+    @patch("github_api_toolkit.github_interface")
+    @patch("src.main.get_repositories")
+    @patch("src.main.load_archive_rules")
+    @patch("src.main.process_repositories")
+    @patch("src.main.wrapped_logging")
+    def test_handler_s3_config_no_key(
+        self,
+        mock_wrapped_logging,
+        mock_process_repositories,
+        mock_load_archive_rules,
+        mock_get_repositories,
+        mock_github_interface,
+        mock_github_graphql_interface,
+        mock_get_access_token,
+        mock_get_environment_variables,
+        mock_boto3_session,
+        mock_get_dict_value,
+        mock_get_config_file,
+    ):
+        # Setup mocks
+        mock_logger = MagicMock()
+        mock_wrapped_logging.return_value = mock_logger
+
+        config = {"features": {"use_local_config": False, "show_log_locally": False}, "archive_configuration": {}}
+        mock_get_config_file.return_value = config
+
+        def get_dict_value_side_effect(config, key):
+            if key == "features":
+                return config["features"]
+            if key == "archive_configuration":
+                return config["archive_configuration"]
+            if key == "use_local_config":
+                return config["use_local_config"]
+            if key == "show_log_locally":
+                return config["show_log_locally"]
+            return None
+
+        mock_get_dict_value.side_effect = get_dict_value_side_effect
+
+        mock_session = MagicMock()
+        mock_boto3_session.return_value = mock_session
+        mock_s3_client = MagicMock()
+        mock_session.client.side_effect = [mock_s3_client, MagicMock()]  # s3, secretsmanager
+
+        with patch.dict(os.environ, {"S3_BUCKET_NAME": "bucket"}):
+            # Simulate NoSuchKey exception
+            class NoSuchKey(Exception):
+                pass
+
+            mock_s3_client.exceptions.NoSuchKey = NoSuchKey
+            mock_s3_client.get_object.side_effect = NoSuchKey("NoSuchKey")
+
+            with pytest.raises(Exception) as excinfo:
+                handler(None, None)
+            assert "Configuration file not found in S3 bucket" in str(excinfo.value)
