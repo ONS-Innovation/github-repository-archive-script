@@ -552,16 +552,24 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     # Load the archive rules from the configuration file
 
-    archive_threshold, notification_period, notification_issue_tag, exemption_filename, maximum_notifications = (
+    archive_threshold, notification_period, notification_issue_tag, exemption_filenames, maximum_notifications = (
         load_archive_rules(archive_rules)
     )
 
     notification_issue_title = "Repository Archive Notice"
+
+    formatted_filenames = []
+
+    for filename in exemption_filenames:
+        formatted_filenames.append(f"       - {filename} \n")
+
     notification_issue_body_tuple = (
         "## Important Notice \n\n",
         f"This repository has not been updated in over {archive_threshold} days and will be archived in {notification_period} days if no action is taken. \n",
         "## Actions Required to Prevent Archive \n\n",
-        f"1. Update the repository by creating/updating a file called `{exemption_filename}`. \n",
+        f"1. Update the repository by creating/updating an exemption file. \n",
+        f"   - The exemption file should be named one of the following: \n",
+        f"{''.join(formatted_filenames)}\n",
         "   - This file should contain the reason why the repository should not be archived. \n",
         "   - If the file already exists, please update it with the latest information. \n",
         "2. Close this issue. \n\n",
