@@ -43,6 +43,10 @@ install:  ## Install the dependencies excluding dev.
 install-dev:  ## Install the dependencies including dev.
 	poetry install
 
+.PHONY: install-docs
+install-docs:  ## Install only the documentation dependencies
+	poetry install --only docs
+
 .PHONY: megalint
 megalint:  ## Run the mega-linter.
 	docker run --platform linux/amd64 --rm \

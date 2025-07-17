@@ -8,6 +8,7 @@ A Python utility used to archive old, unused GitHub repositories from an organis
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [Makefile](#makefile)
+  - [Documentation](#documentation)
   - [Development](#development)
   - [Running the Project](#running-the-project)
     - [Containerised (Recommended)](#containerised-recommended)
@@ -44,6 +45,24 @@ This repository makes use of a Makefile to execute common commands. To view all 
 ```bash
 make all
 ```
+
+## Documentation
+
+This project uses [MkDocs](https://www.mkdocs.org/) for documentation. The documentation is located in the `docs` directory. To view the documentation locally, you can run the following commands:
+
+1. Install MkDocs and its dependencies:
+
+    ```bash
+    make install-docs
+    ```
+
+2. Serve the documentation locally:
+
+    ```bash
+    mkdocs serve
+    ```
+
+3. Open your web browser and navigate to `http://localhost:8000`.
 
 ## Development
 

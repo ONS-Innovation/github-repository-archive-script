@@ -35,6 +35,9 @@ DISABLE_LINTERS:
   - TERRAFORM_TFLINT
   - TERRAFORM_TERRASCAN
 
+  # Disable due to poor configuration options
+  - ACTION_ACTIONLINT
+
 SHOW_ELAPSED_TIME: true
 
 FILEIO_REPORTER: false
