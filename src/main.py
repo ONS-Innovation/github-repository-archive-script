@@ -626,6 +626,9 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
         "2. All issues and pull requests are closed (Optional but strongly recommended). \n",
         "3. Repository Admins / CODEOWNERS are up to date before archiving. This will make it easier to unarchive the repository in the future if needed. \n\n",
         "After these actions, you can archive the repository by going to the repository settings and selecting 'Archive this repository'. \n\n",
+        "## Contact \n\n",
+        "If you have any questions about the process, please refer to the [FAQ section in the documentation](https://ons-innovation.github.io/github-repository-archive-script/). \n",
+        "If you still have questions, please contact an organisation administrator. \n\n",
     )
 
     notification_issue_body = "".join(notification_issue_body_tuple)
