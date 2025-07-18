@@ -2,7 +2,7 @@
 
 When a repository is eligible for archiving (i.e. it has not been updated in the last year), an issue is created in the repository to notify owners/maintainers. This issue serves as a reminder and provides information on how to archive the repository or make it exempt from the process if desired.
 
-All created issues are given an `Archive Notice` label to easily identify them. 
+All created issues are given an `Archive Notice` label to easily identify them.
 
 ## Issue Contents
 
@@ -45,4 +45,4 @@ notification_issue_body_tuple = (
 )
 ```
 
-**Please Note:** The above code snippet is only an example and might not be the exact code in your `src/main.py`. 
+**Please Note:** The above code snippet is only an example and might not be the exact code in your `src/main.py`.

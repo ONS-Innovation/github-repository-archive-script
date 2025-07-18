@@ -4,10 +4,10 @@
 
 - Each week, the archive tool will process each non-archived repository within ONSdigital.
 - For each repository, it will:
-    - Check if the repository hasn't been updated within the last year.
-    - If it hasn't been updated, it will create an issue in the repository to notify the maintainers. The issue will include details about how to avoid the repository being archived and how to archive the repository manually.
-    - If an issue already exists for the repository, it will check how long ago the issue was created.
-    - If the issue was created more than 30 days ago, the tool will archive the repository.
+  - Check if the repository hasn't been updated within the last year.
+  - If it hasn't been updated, it will create an issue in the repository to notify the maintainers. The issue will include details about how to avoid the repository being archived and how to archive the repository manually.
+  - If an issue already exists for the repository, it will check how long ago the issue was created.
+  - If the issue was created more than 30 days ago, the tool will archive the repository.
 
 In depth information on this process is available within the [Technical Documentation](./technical_documentation/the_process.md).
 
@@ -23,11 +23,11 @@ When a repository is archived, it becomes read-only. This means that no further 
 
 ## How Do I Unarchive a Repository?
 
-In order to unarchive a repository, you need to have administrative access to the repository either being an organisation or repository owner. You can unarchive a repository by going to the repository settings and selecting the "Unarchive" option. 
+In order to unarchive a repository, you need to have administrative access to the repository either being an organisation or repository owner. You can unarchive a repository by going to the repository settings and selecting the "Unarchive" option.
 
 To avoid the repository from being archived again, ensure that you push an update to the repository. This will make it exempt from archiving for another year. You may also want to add an `ArchiveExemption.txt` or `ArchiveExemption.md` file to the root of the repository to indicate that it should not be archived in the future.
 
-It is important to note that if a repository is without an owner or has no active admin users, an organisation admin will need to unarchive the repository. 
+It is important to note that if a repository is without an owner or has no active admin users, an organisation admin will need to unarchive the repository.
 
 All repositories within ONSdigital should be maintained to have an up-to-date `CODEOWNERS` file and repository admins to ensure that access is available for unarchiving when necessary. This is specified within ONS' GitHub Usage Policy and must be adhered to.
 

@@ -12,7 +12,7 @@ This includes the repository's name, when it was last updated and the number of 
 
 Iterate through each repository and check the following:
 
-TODO: Finish process write up 
+TODO: Finish process write up
 
 ## Process Flow Chart
 

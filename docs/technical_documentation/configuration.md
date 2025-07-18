@@ -116,4 +116,4 @@ This configuration ensures that the tool uses the cloud configuration, does not 
 
 If `use_local_config` is set to `false`, the tool will fetch the configuration from the cloud S3 bucket. This file can be tuned to the needs of the Technical Advisory Group (TAG) and will rarely need to be changed.
 
-**It is essential that `use_local_config` is set to `false` when deploying to AWS.** 
+**It is essential that `use_local_config` is set to `false` when deploying to AWS.**
