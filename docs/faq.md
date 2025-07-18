@@ -35,6 +35,6 @@ All repositories within ONSdigital should be maintained to have an up-to-date `C
 
 We encourage repository owners to archive their own repositories if they are no longer actively maintained or relevant. You can do this by going to the repository settings and selecting the "Archive" option. We recommend that you also add a notice to the repository's README file to inform users that the repository is archived and no longer maintained, along with closing any open issues or pull requests. This helps us align with GitHub's recommended practices for archiving repositories.
 
-# Further Questions
+## Further Questions
 
 For any further questions or concerns regarding the archiving process, please create an issue in the [Archive Tool repository](https://github.com/ONS-Innovation/github-repository-archive-script/issues) or contact an ONSdigital Owner.
