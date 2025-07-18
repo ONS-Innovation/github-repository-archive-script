@@ -400,6 +400,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Exemption Process
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -411,6 +424,34 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#exemption-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exemption File
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -536,6 +577,23 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#exemption-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exemption File
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -554,6 +612,12 @@
 
 
 <h1 id="exemption-process">Exemption Process</h1>
+<p>In order to make a repository exempt from the archive process, a push or update must be made to the repository. We recommend doing this by creating/updating an exemption file in the repository. Each push to the repository will make the repository exempt from the archive process for a year (this value is configurable).</p>
+<h2 id="exemption-file">Exemption File</h2>
+<p>The name of the exemption file can be configured within <code>config.json</code>. For more information on the tool's configuration, refer to the <a href="../configuration/">Configuration Documentation</a>.</p>
+<p>It is advised to the users within the notification issue that the file should be named according to the configured exemption file names and placed in the root of the repository. We also recommend that the file contains a comment indicating the reason for the exemption.</p>
+<p>The exemption file itself does not impact the tool's functionality in any way, but only acts as a clean way to push an update to the repository, which will reset the exemption timer.</p>
+<p>In the future, there might be some scope to report on the exemption files, such as listing repositories that have an exemption file, checking their age, or providing insights into why repositories are exempted. However, this is not currently implemented.</p>
 
 
 

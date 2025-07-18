@@ -377,6 +377,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    The Process
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -388,6 +401,100 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#steps-in-the-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      Steps in the Process
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps in the Process">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-data-collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Data Collection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-data-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Data Processing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Data Processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-last-updated" class="md-nav__link">
+    <span class="md-ellipsis">
+      a. Last Updated
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-open-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      b. Open Issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-archive-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      c. Archive Repository
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-flow-chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      Process Flow Chart
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -536,6 +643,89 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#steps-in-the-process" class="md-nav__link">
+    <span class="md-ellipsis">
+      Steps in the Process
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Steps in the Process">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-data-collection" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Data Collection
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-data-processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Data Processing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Data Processing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-last-updated" class="md-nav__link">
+    <span class="md-ellipsis">
+      a. Last Updated
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-open-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      b. Open Issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c-archive-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      c. Archive Repository
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#process-flow-chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      Process Flow Chart
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -554,6 +744,24 @@
 
 
 <h1 id="the-process">The Process</h1>
+<h2 id="steps-in-the-process">Steps in the Process</h2>
+<h3 id="1-data-collection">1. Data Collection</h3>
+<p>Using the GitHub API, collect all non-archived repositories for a given organisation (ONSdigital).</p>
+<p>This includes the repository's name, when it was last updated and the number of open issues with the notification issue label (defined within the configuration - see <a href="../configuration/">Configuration</a>).</p>
+<h3 id="2-data-processing">2. Data Processing</h3>
+<p>Iterate through each repository and check the following:</p>
+<h4 id="a-last-updated">a. Last Updated</h4>
+<p>Has the repository been updated in the last year? If not, it is considered inactive and is eligible for archiving.</p>
+<p>(The time period can be configured in the <a href="../configuration/">Configuration</a> file.)</p>
+<p>Checking for updates allows the exemption mechanism to work. If an exemption file gets added or updated within the repository, it will have been updated and considered active.</p>
+<h4 id="b-open-issues">b. Open Issues</h4>
+<p>If the repository is eligible for archiving, check if there is an open issue with the notification label.</p>
+<p>If there is no such issue, create one to notify the team that the repository is being archived.</p>
+<h4 id="c-archive-repository">c. Archive Repository</h4>
+<p>If there is an open issue with the notification label, check how long the issue has been open.</p>
+<p>If the issue has been open for more than 30 days (configurable in the <a href="../configuration/">Configuration</a> file), archive the repository.</p>
+<h2 id="process-flow-chart">Process Flow Chart</h2>
+<p><img alt="Process Flow Chart" src="../../assets/images/archive_tool_process.drawio.png" /></p>
 
 
 

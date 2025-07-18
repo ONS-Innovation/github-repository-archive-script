@@ -372,6 +372,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#further-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further Questions
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -662,6 +671,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#further-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Further Questions
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -685,13 +703,11 @@
 <h2 id="how-does-the-archive-process-work">How does the Archive Process Work?</h2>
 <ul>
 <li>Each week, the archive tool will process each non-archived repository within ONSdigital.</li>
-<li>For each repository, it will:<ul>
+<li>For each repository, it will:</li>
 <li>Check if the repository hasn't been updated within the last year.</li>
 <li>If it hasn't been updated, it will create an issue in the repository to notify the maintainers. The issue will include details about how to avoid the repository being archived and how to archive the repository manually.</li>
 <li>If an issue already exists for the repository, it will check how long ago the issue was created.</li>
 <li>If the issue was created more than 30 days ago, the tool will archive the repository.</li>
-</ul>
-</li>
 </ul>
 <p>In depth information on this process is available within the <a href="../technical_documentation/the_process/">Technical Documentation</a>.</p>
 <h2 id="how-can-i-prevent-my-repository-from-being-archived">How Can I Prevent My Repository from Being Archived?</h2>
@@ -700,13 +716,13 @@
 <h2 id="what-happens-if-my-repository-is-archived">What Happens if My Repository is Archived?</h2>
 <p>When a repository is archived, it becomes read-only. This means that no further changes can be made to the repository, including issues or pull requests. The repository can still be viewed for reference, including any open issues or pull requests that were present at the time of archiving. If you need to make changes to an archived repository, you will need to unarchive it first.</p>
 <h2 id="how-do-i-unarchive-a-repository">How Do I Unarchive a Repository?</h2>
-<p>In order to unarchive a repository, you need to have administrative access to the repository either being an organisation or repository owner. You can unarchive a repository by going to the repository settings and selecting the "Unarchive" option. </p>
+<p>In order to unarchive a repository, you need to have administrative access to the repository either being an organisation or repository owner. You can unarchive a repository by going to the repository settings and selecting the "Unarchive" option.</p>
 <p>To avoid the repository from being archived again, ensure that you push an update to the repository. This will make it exempt from archiving for another year. You may also want to add an <code>ArchiveExemption.txt</code> or <code>ArchiveExemption.md</code> file to the root of the repository to indicate that it should not be archived in the future.</p>
-<p>It is important to note that if a repository is without an owner or has no active admin users, an organisation admin will need to unarchive the repository. </p>
+<p>It is important to note that if a repository is without an owner or has no active admin users, an organisation admin will need to unarchive the repository.</p>
 <p>All repositories within ONSdigital should be maintained to have an up-to-date <code>CODEOWNERS</code> file and repository admins to ensure that access is available for unarchiving when necessary. This is specified within ONS' GitHub Usage Policy and must be adhered to.</p>
 <h2 id="can-i-archive-my-own-repository">Can I Archive My Own Repository?</h2>
 <p>We encourage repository owners to archive their own repositories if they are no longer actively maintained or relevant. You can do this by going to the repository settings and selecting the "Archive" option. We recommend that you also add a notice to the repository's README file to inform users that the repository is archived and no longer maintained, along with closing any open issues or pull requests. This helps us align with GitHub's recommended practices for archiving repositories.</p>
-<h1 id="further-questions">Further Questions</h1>
+<h2 id="further-questions">Further Questions</h2>
 <p>For any further questions or concerns regarding the archiving process, please create an issue in the <a href="https://github.com/ONS-Innovation/github-repository-archive-script/issues">Archive Tool repository</a> or contact an ONSdigital Owner.</p>
 
 
