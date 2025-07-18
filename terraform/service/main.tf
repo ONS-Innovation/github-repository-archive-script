@@ -52,6 +52,7 @@ resource "aws_lambda_function" "lambda_function" {
       GITHUB_APP_CLIENT_ID = var.github_app_client_id
       AWS_SECRET_NAME      = var.aws_secret_name
       AWS_ACCOUNT_NAME     = var.env_name
+      AWS_BUCKET_NAME      = var.aws_bucket_name
     }
   }
 }

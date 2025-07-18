@@ -18,6 +18,12 @@ variable "aws_secret_name" {
   type        = string
 }
 
+variable "aws_bucket_name" {
+  description = "The name of the S3 bucket which the cloud config is stored in"
+  type        = string
+  default     = "${env_name}-github-repository-archive-script"
+}
+
 variable "env_name" {
   description = "AWS environment"
   type        = string
@@ -57,7 +63,7 @@ variable "schedule" {
 variable "log_retention_days" {
   description = "Lambda log retention in days"
   type        = number
-  default     = 30
+  default     = 90
 }
 
 variable "github_org" {

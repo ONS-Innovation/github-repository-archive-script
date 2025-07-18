@@ -366,16 +366,30 @@ def handle_response(logger: wrapped_logging, response: Any, message: str) -> boo
     return True
 
 
-def process_repositories(  # noqa: C901
+def process_repositories(  # noqa: C901, PLR0915
     interfaces: list[Any],
     org: str,
     repositories: list[dict],
     archive_criteria: list[str],
     notification_content: list[str],
-) -> Tuple[int, int]:
+) -> Tuple[list, list]:
+    """Processes the repositories to archive them if they meet the criteria, or create issues to notify the owners/contributors.
 
+    Args:
+        interfaces (list[Any]): A list containing the logger and the REST interface for the GitHub API.
+        org (str): The name of the GitHub organization.
+        repositories (list[dict]): A list of repositories to process.
+        archive_criteria (list[str]): A list containing the archive threshold, notification period, notification issue tag, and maximum notifications.
+        notification_content (list[str]): A list containing the notification issue title and body.
+
+    Returns:
+        Tuple[list, list]: A tuple containing two lists:
+            - A list of repositories that were archived.
+            - A list of repositories for which issues were created.
+    """
     issues_created = 0
-    repositories_archived = 0
+    repository_issues_created = []
+    repositories_archived = []
 
     logger, rest = interfaces
     archive_threshold, notification_period, notification_issue_tag, maximum_notifications = archive_criteria
@@ -426,7 +440,7 @@ def process_repositories(  # noqa: C901
 
                 logger.log_info(f"Successfully archived repository {repository['name']}")
 
-                repositories_archived += 1
+                repositories_archived.append(repository["name"])
 
                 continue
 
@@ -491,6 +505,7 @@ def process_repositories(  # noqa: C901
             logger.log_info(f"Created issue for repository {repository['name']}.")
 
             issues_created += 1
+            repository_issues_created.append(repository["name"])
 
         elif issues_created == int(maximum_notifications) and not notice_issued:
             logger.log_info("Maximum number of notifications reached. No more notifications will be made.")
@@ -499,7 +514,7 @@ def process_repositories(  # noqa: C901
         else:
             logger.log_info("Skipping repository. Maximum number of notifications reached.")
 
-    return repositories_archived, issues_created
+    return repositories_archived, repository_issues_created
 
 
 def handler(event, context) -> str:  # type: ignore[no-untyped-def]
@@ -511,6 +526,39 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     features = get_dict_value(config, "features")
     archive_rules = get_dict_value(config, "archive_configuration")
+
+    # Create a Boto3 session
+
+    session = boto3.session.Session()
+
+    # Create Boto3 S3 client
+
+    s3 = session.client(service_name="s3")
+
+    # Check whether to use local config or cloud config
+
+    if not get_dict_value(features, "use_local_config"):
+
+        bucket_name = os.getenv("S3_BUCKET_NAME")
+
+        if not bucket_name:
+            error_message = "S3_BUCKET_NAME environment variable not set. Please check your environment variables."
+            raise Exception(error_message)
+
+        try:
+            response = s3.get_object(
+                Bucket=bucket_name,
+                Key="config.json",
+            )
+        except s3.exceptions.NoSuchKey as e:
+            error_message = (
+                f"Configuration file not found in S3 bucket {bucket_name}. Please check the bucket contents."
+            )
+            raise Exception(error_message) from e
+
+        config = json.loads(response["Body"].read().decode("utf-8"))
+        features = get_dict_value(config, "features")
+        archive_rules = get_dict_value(config, "archive_configuration")
 
     # Initialise logging
 
@@ -528,9 +576,7 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     # Create Boto3 Secret Manager client
 
-    session = boto3.session.Session()
     secret_manager = session.client(service_name="secretsmanager", region_name=aws_default_region)
-
     logger.log_info("Boto3 Secret Manager client created.")
 
     # Create GitHub API interfaces (GraphQL and REST)
@@ -552,21 +598,37 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     # Load the archive rules from the configuration file
 
-    archive_threshold, notification_period, notification_issue_tag, exemption_filename, maximum_notifications = (
+    archive_threshold, notification_period, notification_issue_tag, exemption_filenames, maximum_notifications = (
         load_archive_rules(archive_rules)
     )
 
     notification_issue_title = "Repository Archive Notice"
+
+    formatted_filenames = []
+
+    for filename in exemption_filenames:
+        formatted_filenames.append(f"       - {filename} \n")
+
     notification_issue_body_tuple = (
         "## Important Notice \n\n",
         f"This repository has not been updated in over {archive_threshold} days and will be archived in {notification_period} days if no action is taken. \n",
         "## Actions Required to Prevent Archive \n\n",
-        f"1. Update the repository by creating/updating a file called `{exemption_filename}`. \n",
+        "1. Update the repository by creating/updating an exemption file. \n",
+        "   - The exemption file should be named one of the following: \n",
+        f"{''.join(formatted_filenames)}\n",
         "   - This file should contain the reason why the repository should not be archived. \n",
         "   - If the file already exists, please update it with the latest information. \n",
         "2. Close this issue. \n\n",
         f"After these actions, the repository will be exempt from archive for another {archive_threshold} days. \n\n",
-        "If you have any questions, please contact an organization administrator.",
+        "## Manual Archive \n\n",
+        "If you wish to archive this repository manually, please ensure the following: \n",
+        "1. A notice is added to the repository `README.md` file indicating that the repository is archived. \n",
+        "2. All issues and pull requests are closed (Optional but strongly recommended). \n",
+        "3. Repository Admins / CODEOWNERS are up to date before archiving. This will make it easier to unarchive the repository in the future if needed. \n\n",
+        "After these actions, you can archive the repository by going to the repository settings and selecting 'Archive this repository'. \n\n",
+        "## Contact \n\n",
+        "If you have any questions about the process, please refer to the [FAQ section in the documentation](https://ons-innovation.github.io/github-repository-archive-script/). \n",
+        "If you still have questions, please contact an organisation administrator. \n\n",
     )
 
     notification_issue_body = "".join(notification_issue_body_tuple)
@@ -582,11 +644,14 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
     ]
     notification_content = [notification_issue_title, notification_issue_body]
 
-    repositories_archived, issues_created = process_repositories(
+    repositories_archived, repository_issues_created = process_repositories(
         interfaces, org, repositories, archive_criteria, notification_content
     )
 
-    message = f"Script completed. {len(repositories)} repositories checked. {issues_created} issues created. {repositories_archived} repositories archived."
+    logger.log_info(f"Repositories archived: {repositories_archived}")
+    logger.log_info(f"Issues created: {repository_issues_created}")
+
+    message = f"Script completed. {len(repositories)} repositories checked. {len(repository_issues_created)} issues created. {len(repositories_archived)} repositories archived."
 
     logger.log_info(message)
 

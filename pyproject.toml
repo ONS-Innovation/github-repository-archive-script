@@ -23,6 +23,12 @@ pytest-cov = "^5.0.0"
 mypy = "^1.13.0"
 types-requests = "^2.32.0.20241016"
 
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.6.1"
+mkdocs-material = "^9.6.15"
+mkdocstrings-python = "^1.16.12"
+
 [tool.black]
 line-length = 120
 
