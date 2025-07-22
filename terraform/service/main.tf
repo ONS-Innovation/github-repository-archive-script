@@ -99,6 +99,17 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
   policy_arn = aws_iam_policy.lambda_logging.arn
 }
 
+resource "aws_iam_policy" "lambda_s3_policy" {
+  name        = "${var.lambda_name}-${var.env_name}-s3-policy"
+  description = "IAM policy for S3 access for Lambda function"
+  policy      = data.aws_iam_policy_document.lambda_s3_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "s3_policy" {
+  role       = aws_iam_role.lambda_function_role.name
+  policy_arn = aws_iam_policy.lambda_s3_policy.arn
+}
+
 resource "aws_iam_policy" "lambda_secret_manager_policy" {
   name        = "${var.lambda_name}-${var.env_name}-secret-manager-policy"
   description = "IAM policy for Secret Manager access for Lambda function"

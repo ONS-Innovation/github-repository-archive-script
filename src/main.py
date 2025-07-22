@@ -568,6 +568,9 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     logger.log_info("Initialised logging.")
 
+    # Log the configuration parameters
+    logger.log_info(config)
+
     # Get the environment variables
 
     org, app_client_id, aws_default_region, aws_secret_name = get_environment_variables()
