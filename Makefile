@@ -14,11 +14,13 @@ clean: ## Clean the temporary files.
 	rm -rf .coverage
 	rm -rf .ruff_cache
 	rm -rf megalinter-reports
+	rm -rf debug.log
+	rm -rf site
 
 .PHONY: format
 format:  ## Format the code.
-	poetry run black .
-	poetry run ruff check . --fix
+	poetry run black src
+	poetry run ruff check src --fix
 
 .PHONY: lint
 lint:  ## Run all linters (black/ruff/pylint/mypy).
@@ -41,6 +43,10 @@ install:  ## Install the dependencies excluding dev.
 .PHONY: install-dev
 install-dev:  ## Install the dependencies including dev.
 	poetry install
+
+.PHONY: install-docs
+install-docs:  ## Install only the documentation dependencies
+	poetry install --only docs
 
 .PHONY: megalint
 megalint:  ## Run the mega-linter.
