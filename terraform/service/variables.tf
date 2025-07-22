@@ -19,9 +19,9 @@ variable "aws_secret_name" {
 }
 
 variable "aws_bucket_name" {
-  description = "The name of the S3 bucket which the cloud config is stored in"
+  description = "The name of the S3 bucket which the cloud config is stored in. This should not include the environment name (i.e. sdp-dev) as it will be added automatically."
   type        = string
-  default     = "${env_name}-github-repository-archive-script"
+  default     = "github-repository-archive-script"
 }
 
 variable "env_name" {
@@ -109,4 +109,5 @@ variable "business_owner_tag" {
 
 locals {
   lambda_repo = "${var.env_name}-${var.lambda_name}"
+  bucket_name = "${var.env_name}-${var.aws_bucket_name}"
 }
