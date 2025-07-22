@@ -27,7 +27,8 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material
       - run: pip install poetry
+      - run: python3 -m venv .venv
+      - run: source .venv/bin/activate
       - run: poetry install --only docs
       - run: mkdocs gh-deploy --force
