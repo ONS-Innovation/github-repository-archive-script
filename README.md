@@ -140,7 +140,7 @@ Before the doing the following, make sure your Daemon is running. If using Colim
     github-repository-archive-script
     ```
 
-    When running the container, you are required to pass some environment variable.
+    When running the container, you are required to pass some environment variables:
 
     | Variable                    | Description                                                                                        |
     |-----------------------------|----------------------------------------------------------------------------------------------------|
