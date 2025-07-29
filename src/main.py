@@ -328,22 +328,22 @@ def get_repositories(
     return repositories, number_of_pages
 
 
-def load_archive_rules(archive_rules: dict) -> Tuple[int, int, str, str, int]:
+def load_archive_rules(archive_rules: dict) -> Tuple[int, int, str, list[str], int]:
     """Loads the archive rules from the configuration file.
 
     Args:
         archive_rules (dict): The archive rules from the configuration file.
 
     Returns:
-        Tuple[int, int, str, str, int]: The archive threshold, the notification period, the notification issue tag, the exemption filename, and the maximum number of notifications.
+        Tuple[int, int, str, list[str], int]: The archive threshold, the notification period, the notification issue tag, a list of exemption filenames, and the maximum number of notifications.
     """
     archive_threshold = int(get_dict_value(archive_rules, "archive_threshold"))
     notification_period = int(get_dict_value(archive_rules, "notification_period"))
     notification_issue_tag = str(get_dict_value(archive_rules, "notification_issue_tag"))
-    exemption_filename = str(get_dict_value(archive_rules, "exemption_filename"))
+    exemption_filenames = list(get_dict_value(archive_rules, "exemption_filename"))
     maximum_notifications = int(get_dict_value(archive_rules, "maximum_notifications"))
 
-    return archive_threshold, notification_period, notification_issue_tag, exemption_filename, maximum_notifications
+    return archive_threshold, notification_period, notification_issue_tag, exemption_filenames, maximum_notifications
 
 
 def handle_response(logger: wrapped_logging, response: Any, message: str) -> bool:
