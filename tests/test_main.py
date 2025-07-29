@@ -499,13 +499,13 @@ class TestLoadArchiveRules:
             "archive_threshold": 365,
             "notification_period": 30,
             "notification_issue_tag": "archive-notice",
-            "exemption_filename": "DO_NOT_ARCHIVE",
+            "exemption_filename": ["DO_NOT_ARCHIVE"],
             "maximum_notifications": 5,
         }
 
         result = load_archive_rules(archive_rules)
 
-        assert result == (365, 30, "archive-notice", "DO_NOT_ARCHIVE", 5)
+        assert result == (365, 30, "archive-notice", ["DO_NOT_ARCHIVE"], 5)
 
     def test_load_archive_rules_missing_key(self):
         archive_rules = {
@@ -526,7 +526,7 @@ class TestLoadArchiveRules:
             "archive_threshold": "not_an_int",
             "notification_period": 30,
             "notification_issue_tag": "archive-notice",
-            "exemption_filename": "DO_NOT_ARCHIVE",
+            "exemption_filename": ["DO_NOT_ARCHIVE"],
             "maximum_notifications": 5,
         }
 
