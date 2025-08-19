@@ -43,6 +43,8 @@ resource "aws_lambda_function" "lambda_function" {
 
   memory_size = var.lambda_memory
 
+  reserved_concurrent_executions = 100
+
   role = aws_iam_role.lambda_function_role.arn
 
   environment {
