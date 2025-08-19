@@ -1,6 +1,9 @@
 module "eventbridge" {
-  source = "terraform-aws-modules/eventbridge/aws"
-  version = "4.1.0"
+  # source  = "terraform-aws-modules/eventbridge/aws"
+  # version = "4.1.0"
+
+  # Pin to a git commit instead. This is the same as the above.
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eventbridge.git?ref=3e8657cd925d5b4a21301a09b67d8081f24bcfc3"
 
   role_name = "${var.lambda_name}-eventbridge-role"
 
