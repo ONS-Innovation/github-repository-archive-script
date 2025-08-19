@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "lambda_logging" {
       "logs:PutLogEvents",
     ]
 
-    resources = ["arn:aws:logs:*:*:*"] #trivy:ignore:AVD-AWS-0057
+    resources = ["arn:aws:logs:${var.region}:${var.aws_account_id}:log-group:/aws/lambda/${var.lambda_name}:*"]
   }
 }
 
