@@ -14,5 +14,7 @@ skip-check:
   # Pin module sources to a commit hash (false positive)
   - CKV_TF_1
 
-  # These ignores are TEMPORARY. They will be resolved in the future.
+  # Ignore adding code-signing to Lambda.
+  # It is not needed here since our Lambda functions use container
+  # images over uploading .zip files for layers.
   - CKV_AWS_272
