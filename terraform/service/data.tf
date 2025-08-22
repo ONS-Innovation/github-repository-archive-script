@@ -39,7 +39,9 @@ data "aws_iam_policy_document" "lambda_logging" {
       "logs:PutLogEvents",
     ]
 
-    resources = ["arn:aws:logs:${var.region}:${var.aws_account_id}:log-group:/aws/lambda/${var.lambda_name}:*"]
+    resources = [
+      "${aws_cloudwatch_log_group.loggroup.arn}:*"
+    ]
   }
 }
 
