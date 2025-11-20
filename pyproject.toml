@@ -2,7 +2,7 @@
 name = "src"
 version = "v0.0.1"
 description = "A Python utility used to archive old, unused GitHub repositories from an organisation."
-authors = [{name="ONS-Innovation/keh-dev"}]
+authors = ["ONS-Innovation keh-dev"]
 license = "MIT"
 readme = "README.md"
 
