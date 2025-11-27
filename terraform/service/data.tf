@@ -87,3 +87,9 @@ data "aws_iam_policy_document" "lambda_eventbridge_policy" {
     ]
   }
 }
+
+# Resolve the pushed image (must exist before terraform apply)
+data "aws_ecr_image" "lambda_image" {
+  repository_name = data.aws_ecr_repository.profile_lambda_ecr_repo
+  image_tag       = var.lambda_version
+}
