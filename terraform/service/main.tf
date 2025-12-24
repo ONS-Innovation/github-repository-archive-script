@@ -27,7 +27,7 @@ resource "aws_security_group" "lambda_sg" {
 resource "aws_lambda_function" "lambda_function" {
   function_name = var.lambda_name
   timeout       = var.lambda_timeout
-  image_uri     = "${data.aws_ecr_repository.profile_lambda_ecr_repo.repository_url}:${var.lambda_version}"
+  image_uri     = "${data.aws_ecr_repository.profile_lambda_ecr_repo.repository_url}@${data.aws_ecr_image.lambda_image.image_digest}"
   package_type  = "Image"
   architectures = [var.lambda_arch]
   logging_config {
