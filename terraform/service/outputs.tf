@@ -22,3 +22,8 @@ output "rule_arn" {
   description = "ARN of the EventBridge rule"
   value       = module.eventbridge.eventbridge_rules["${var.lambda_name}-crons"]["arn"]
 }
+
+output "image_digest" {
+  description = "Digest of the Lambda function container image"
+  value       = data.aws_ecr_image.lambda_image.image_digest
+}
