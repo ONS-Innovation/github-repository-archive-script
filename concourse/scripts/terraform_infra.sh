@@ -19,6 +19,9 @@ github_org=$(echo "$secrets" | jq -r .github_org)
 
 aws_bucket_name=$(echo "$secrets" | jq -r .aws_bucket_name)
 
+lambda_timeout=$(echo "$secrets" | jq -r .lambda_timeout)
+lambda_memory=$(echo "$secrets" | jq -r .lambda_memory)
+
 export AWS_ACCESS_KEY_ID="$aws_access_key_id"
 export AWS_SECRET_ACCESS_KEY="$aws_secret_access_key"
 
@@ -47,4 +50,6 @@ terraform apply \
     -var "github_org=$github_org" \
     -var "aws_bucket_name=${aws_bucket_name}" \
     -var "lambda_version=${tag}" \
+    -var "lambda_timeout=${lambda_timeout}" \
+    -var "lambda_memory=${lambda_memory}" \
     -auto-approve
