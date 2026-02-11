@@ -25,7 +25,7 @@ export AWS_SECRET_ACCESS_KEY="$aws_secret_access_key"
 git config --global url."https://x-access-token:$github_access_token@github.com/".insteadOf "https://github.com/"
 
 if [ "${env}" != "prod" ]; then
-	env="dev"
+    env="dev"
 fi
 
 echo "${env}"
@@ -37,14 +37,14 @@ terraform init -backend-config=env/"${env}"/backend-"${env}".tfbackend -reconfig
 # The following terraform-apply may need to change if the environment variables change
 
 terraform apply \
-	-var "aws_account_id=$aws_account_id" \
-	-var "aws_access_key_id=$aws_access_key_id" \
-	-var "aws_secret_access_key=$aws_secret_access_key" \
-	-var "env_name=$env_name" \
-	-var "lambda_name=${lambda_name}" \
-	-var "github_app_client_id=$github_app_client_id" \
-	-var "aws_secret_name=$aws_secret_name" \
-	-var "github_org=$github_org" \
-	-var "aws_bucket_name=${aws_bucket_name}" \
-	-var "lambda_version=${tag}" \
-	-auto-approve
+    -var "aws_account_id=$aws_account_id" \
+    -var "aws_access_key_id=$aws_access_key_id" \
+    -var "aws_secret_access_key=$aws_secret_access_key" \
+    -var "env_name=$env_name" \
+    -var "lambda_name=${lambda_name}" \
+    -var "github_app_client_id=$github_app_client_id" \
+    -var "aws_secret_name=$aws_secret_name" \
+    -var "github_org=$github_org" \
+    -var "aws_bucket_name=${aws_bucket_name}" \
+    -var "lambda_version=${tag}" \
+    -auto-approve

@@ -1,3 +1,7 @@
+---
+# Kics linting thinks that the "password" and "github_access_token" keys are secrets, but they are not.
+# These instances are ignored appropriately.
+
 resource_types:
   - name: key-value
     type: registry-image
@@ -11,6 +15,7 @@ resources:
     source:
       uri: https://github.com/ONS-Innovation/github-repository-archive-script
       username: ((github_access_token))
+      # kics-scan ignore-line
       password: x-oauth-basic # checkov:skip=CKV_SECRET_6:Checkov thinks this is a secret, but it is not
       branch: ((branch))
   - name: github-release
@@ -18,6 +23,7 @@ resources:
     source:
       owner: ONS-Innovation
       repository: github-repository-archive-script
+      # kics-scan ignore-line
       access_token: ((github_access_token))
   - name: github-release-tag
     type: key-value
@@ -49,6 +55,7 @@ terraform-task: &terraform-task
       - name: github-release-tag
     params:
       secrets: ((sdp_((env))_repository_archive_script_secrets))
+      # kics-scan ignore-line
       github_access_token: ((github_access_token))
       env: ((env))
       branch: ((branch))
@@ -236,6 +243,7 @@ jobs:
           #       additional_tags: release-tag-output/tag
           - <<: *terraform-task
             params:
+              # kics-scan ignore-line
               github_access_token: ((github_access_token))
               env: dev
               secrets: ((sdp_dev_repository_archive_script_secrets))
@@ -297,6 +305,7 @@ jobs:
             timeout: 10m
           - <<: *terraform-task
             params:
+              # kics-scan ignore-line
               github_access_token: ((github_access_token))
               env: prod
               secrets: ((sdp_dev_repository_archive_script_secrets))
