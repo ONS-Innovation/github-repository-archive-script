@@ -14,15 +14,18 @@ A Python utility used to archive old, unused GitHub repositories from an organis
     - [Containerised (Recommended)](#containerised-recommended)
     - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
   - [Deployment](#deployment)
-    - [Overview](#overview)
-    - [Deployment Prerequisites](#deployment-prerequisites)
-    - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
-    - [Deploying the Lambda](#deploying-the-lambda)
-    - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
     - [Deployments with Concourse](#deployments-with-concourse)
       - [Allowlisting your IP](#allowlisting-your-ip)
       - [Setting up a pipeline](#setting-up-a-pipeline)
+      - [Prod deployment](#prod-deployment)
       - [Triggering a pipeline](#triggering-a-pipeline)
+      - [Destroying a pipeline](#destroying-a-pipeline)
+    - [Manual Deployment](#manual-deployment)
+      - [Overview](#overview)
+      - [Deployment Prerequisites](#deployment-prerequisites)
+      - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
+      - [Deploying the Lambda](#deploying-the-lambda)
+      - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
   - [Linting and Testing](#linting-and-testing)
     - [GitHub Actions](#github-actions)
     - [Running Tests Locally](#running-tests-locally)
@@ -217,7 +220,68 @@ To run the Lambda function outside of a container, we need to execute the `handl
 
 ## Deployment
 
-### Overview
+### Deployments with Concourse
+
+#### Allowlisting your IP
+
+To setup the deployment pipeline with concourse, you must first allowlist your IP address on the Concourse
+server. IP addresses are flushed everyday at 00:00 so this must be done at the beginning of every working day
+whenever the deployment pipeline needs to be used. Follow the instructions on the Confluence page (SDP Homepage > SDP Concourse > Concourse Login) to
+login. All our pipelines run on sdp-pipeline-prod, whereas sdp-pipeline-dev is the account used for
+changes to Concourse instance itself. Make sure to export all necessary environment variables from sdp-pipeline-prod (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN).
+
+#### Setting up a pipeline
+
+When setting up our pipelines, we use ecs-infra-user on sdp-dev to be able to interact with our infrastructure on AWS. The credentials for this are stored on
+AWS Secrets Manager so you do not need to set up anything yourself.
+
+To set the pipeline, run the following script:
+
+```bash
+chmod u+x ./concourse/scripts/set_pipeline.sh
+./concourse/scripts/set_pipeline.sh
+```
+
+Note that you only have to run chmod the first time running the script in order to give permissions.
+This script will set the branch and pipeline name to whatever branch you are currently on. It will also set the image tag on ECR to 7 characters of the current branch name if running on a branch other than main. For main, the ECR tag will be the latest release tag on the repository that has semantic versioning(vX.Y.Z).
+
+The pipeline name itself will usually follow a pattern as follows: `repository-archive-script-<branch-name>` for any non-main branch and `repository-archive-script` for the main/master branch.
+
+#### Prod deployment
+
+To deploy to prod, it is required that a Github Release is made on Github. The release is required to follow semantic versioning of vX.Y.Z.
+
+A manual trigger is to be made on the pipeline name `repository-archive-script > deploy-after-github-release` job through the Concourse CI UI. This will create a github-create-tag resource that is required on the `repository-archive-script > build-and-push-prod` job. Then the prod deployment job is also through a manual trigger ensuring that prod is only deployed using the latest GitHub release tag in the form of vX.Y.Z and is manually controlled.
+
+#### Triggering a pipeline
+
+Once the pipeline has been set, you can manually trigger a dev build on the Concourse UI, or run the following command for non-main branch deployment:
+
+```bash
+fly -t aws-sdp trigger-job -j repository-archive-script-<branch-name>/build-and-push-dev
+```
+
+and for main branch deployment:
+
+```bash
+fly -t aws-sdp trigger-job -j repository-archive-script/build-and-push-dev
+```
+
+#### Destroying a pipeline
+
+To destroy the pipeline, run the following command:
+
+```bash
+fly -t aws-sdp destroy-pipeline -p repository-archive-script-<branch-name>
+```
+
+**It is unlikely that you will need to destroy a pipeline, but the command is here if needed.**
+
+**Note:** This will not destroy any resources created by Terraform. You must manually destroy these resources using Terraform.
+
+### Manual Deployment
+
+#### Overview
 
 This repository is designed to be hosted on AWS Lambda using a container image as the Lambda's definition.
 
@@ -226,7 +290,7 @@ There are 2 parts to deployment:
 1. Updating the ECR Image.
 2. Updating the Lambda.
 
-### Deployment Prerequisites
+#### Deployment Prerequisites
 
 Before following the instructions below, we assume that:
 
@@ -236,7 +300,7 @@ Before following the instructions below, we assume that:
 
 Additionally, we recommend that you keep the container versioning in sync with GitHub releases. Internal documentation for this is available on Confluence ([GitHub Releases and AWS ECR Versions](https://confluence.ons.gov.uk/display/KEH/GitHub+Releases+and+AWS+ECR+Versions)). We follow Semantic Versioning ([Learn More](https://semver.org/spec/v2.0.0.html)).
 
-### Storing the Container on AWS Elastic Container Registry (ECR)
+#### Storing the Container on AWS Elastic Container Registry (ECR)
 
 When changes are made to the repository's source code, the code must be containerised and pushed to AWS for the lambda to use.
 
@@ -281,7 +345,7 @@ All of the commands (steps 2-5) are available for your environment within the AW
 
 Once pushed, you should be able to see your new image version within the ECR repository.
 
-### Deploying the Lambda
+#### Deploying the Lambda
 
 Once AWS ECR has the new container image, we need to update the Lambda's configuration to use it. To do this, use the repository's provided [Terraform](./terraform/).
 
@@ -338,7 +402,7 @@ Within the terraform directory, there is a [service](./terraform/service/) subdi
 
 Once applied successfully, the Lambda and EventBridge Schedule will be created.
 
-### Destroying / Removing the Lambda
+#### Destroying / Removing the Lambda
 
 To delete the service resources, run the following:
 
@@ -350,48 +414,6 @@ terraform destroy -var-file=env/dev/dev.tfvars
 ```
 
 **Please Note:** Make sure to use the correct `.tfbackend` and `.tfvars` files for your environment.
-
-### Deployments with Concourse
-
-#### Allowlisting your IP
-
-To setup the deployment pipeline with concourse, you must first allowlist your IP address on the Concourse
-server. IP addresses are flushed everyday at 00:00 so this must be done at the beginning of every working day
-whenever the deployment pipeline needs to be used. Follow the instructions on the Confluence page (SDP Homepage > SDP Concourse > Concourse Login) to
-login. All our pipelines run on sdp-pipeline-prod, whereas sdp-pipeline-dev is the account used for
-changes to Concourse instance itself. Make sure to export all necessary environment variables from sdp-pipeline-prod (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN).
-
-#### Setting up a pipeline
-
-When setting up our pipelines, we use ecs-infra-user on sdp-dev to be able to interact with our infrastructure on AWS. The credentials for this are stored on
-AWS Secrets Manager so you do not need to set up anything yourself.
-
-To set the pipeline, run the following script:
-
-```bash
-chmod u+x ./concourse/scripts/set_pipeline.sh
-./concourse/scripts/set_pipeline.sh github-repo-archive-script
-```
-
-Note that you only have to run chmod the first time running the script in order to give permissions.
-This script will set the branch and pipeline name to whatever branch you are currently on. It will also set the image tag on ECR to the current commit hash at the time of setting the pipeline.
-
-The pipeline name itself will usually follow a pattern as follows: `<repo-name>-<branch-name>`
-If you wish to set a pipeline for another branch without checking out, you can run the following:
-
-```bash
-./concourse/scripts/set_pipeline.sh github-repo-archive-script <branch_name>
-```
-
-If the branch you are deploying is "main" or "master", it will trigger a deployment to the sdp-prod environment. To set the ECR image tag, you must draft a Github release pointing to the latest release of the main/master branch that has a tag in the form of vX.Y.Z. Drafting up a release will automatically deploy the latest version of the main/master branch with the associated release tag, but you can also manually trigger a build through the Concourse UI or the terminal prompt.
-
-#### Triggering a pipeline
-
-Once the pipeline has been set, you can manually trigger a build on the Concourse UI, or run the following command:
-
-```bash
-fly -t aws-sdp trigger-job -j github-repo-archive-script-<branch-name>/build-and-push
-```
 
 ## Linting and Testing
 

@@ -1,15 +1,17 @@
-# shellcheck disable=SC3040,SC2154,SC2148
+#!/bin/sh
+
+# shellcheck disable=SC2154,SC3040
 
 set -euo pipefail
 
-# shellcheck disable=SC3040,SC2154
-aws sts assume-role --output text \
-    --role-arn "${aws_role_arn}" \
-    --role-session-name concourse-pipeline-run \
-    --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" |
-    awk -F '\t' '{print $1 > ("AccessKeyId")}{print $2 > ("SecretAccessKey")}{print $3 > ("SessionToken")}'
+apk add --no-cache aws-cli podman jq iptables
 
-# shellcheck disable=SC3040,SC2154
+aws sts assume-role --output text \
+	--role-arn "${aws_role_arn}" \
+	--role-session-name concourse-pipeline-run \
+	--query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" |
+	awk -F '\t' '{print $1 > ("AccessKeyId")}{print $2 > ("SecretAccessKey")}{print $3 > ("SessionToken")}'
+
 AWS_ACCESS_KEY_ID="$(cat AccessKeyId)"
 AWS_SECRET_ACCESS_KEY="$(cat SecretAccessKey)"
 AWS_SESSION_TOKEN="$(cat SessionToken)"
