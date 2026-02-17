@@ -308,7 +308,7 @@ jobs:
               # kics-scan ignore-line
               github_access_token: ((github_access_token))
               env: prod
-              secrets: ((sdp_dev_repository_archive_script_secrets))
+              secrets: ((sdp_prod_repository_archive_script_secrets))
         on_failure:
           do:
             - task: notify-azure-webhook
