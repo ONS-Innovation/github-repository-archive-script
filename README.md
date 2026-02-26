@@ -5,41 +5,41 @@ A Python utility used to archive old, unused GitHub repositories from an organis
 ## Table of Contents
 
 - [GitHub Repository Archive Script](#github-repository-archive-script)
-    - [Table of Contents](#table-of-contents)
-    - [Prerequisites](#prerequisites)
-    - [Makefile](#makefile)
-    - [Documentation](#documentation)
-    - [Development](#development)
-    - [Running the Project](#running-the-project)
-        - [Containerised (Recommended)](#containerised-recommended)
-        - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
-    - [Deployment](#deployment)
-        - [Deployments with Concourse](#deployments-with-concourse)
-            - [Allowlisting your IP](#allowlisting-your-ip)
-            - [Setting up a pipeline](#setting-up-a-pipeline)
-            - [Prod deployment](#prod-deployment)
-            - [Triggering a pipeline](#triggering-a-pipeline)
-            - [Destroying a pipeline](#destroying-a-pipeline)
-        - [Manual Deployment](#manual-deployment)
-            - [Overview](#overview)
-            - [Deployment Prerequisites](#deployment-prerequisites)
-            - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
-            - [Deploying the Lambda](#deploying-the-lambda)
-            - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
-    - [Linting and Testing](#linting-and-testing)
-        - [GitHub Actions](#github-actions)
-        - [Running Tests Locally](#running-tests-locally)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Makefile](#makefile)
+  - [Documentation](#documentation)
+  - [Development](#development)
+  - [Running the Project](#running-the-project)
+    - [Containerised (Recommended)](#containerised-recommended)
+    - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
+  - [Deployment](#deployment)
+    - [Deployments with Concourse](#deployments-with-concourse)
+      - [Allowlisting your IP](#allowlisting-your-ip)
+      - [Setting up a pipeline](#setting-up-a-pipeline)
+      - [Prod deployment](#prod-deployment)
+      - [Triggering a pipeline](#triggering-a-pipeline)
+      - [Destroying a pipeline](#destroying-a-pipeline)
+    - [Manual Deployment](#manual-deployment)
+      - [Overview](#overview)
+      - [Deployment Prerequisites](#deployment-prerequisites)
+      - [Storing the Container on AWS Elastic Container Registry (ECR)](#storing-the-container-on-aws-elastic-container-registry-ecr)
+      - [Deploying the Lambda](#deploying-the-lambda)
+      - [Destroying / Removing the Lambda](#destroying--removing-the-lambda)
+  - [Linting and Testing](#linting-and-testing)
+    - [GitHub Actions](#github-actions)
+    - [Running Tests Locally](#running-tests-locally)
 
 ## Prerequisites
 
 - A Docker Daemon (Colima is recommended)
-    - [Colima](https://github.com/abiosoft/colima)
+  - [Colima](https://github.com/abiosoft/colima)
 - Terraform (For deployment)
-    - [Terraform](https://www.terraform.io/)
+  - [Terraform](https://www.terraform.io/)
 - Python >3.12
-    - [Python](https://www.python.org/)
+  - [Python](https://www.python.org/)
 - Make
-    - [GNU make](https://www.gnu.org/software/make/manual/make.html#Overview)
+  - [GNU make](https://www.gnu.org/software/make/manual/make.html#Overview)
 
 ## Makefile
 
@@ -146,7 +146,7 @@ Before the doing the following, make sure your Daemon is running. If using Colim
     When running the container, you are required to pass some environment variables:
 
     | Variable                    | Description                                                                                        |
-    | --------------------------- | -------------------------------------------------------------------------------------------------- |
+    |-----------------------------|----------------------------------------------------------------------------------------------------|
     | GITHUB_ORG                  | The organisation you would like to run the tool in.                                                |
     | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API.          |
     | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                              |
