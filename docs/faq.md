@@ -4,10 +4,10 @@
 
 - Each week, the archive tool will process each non-archived repository within ONSdigital.
 - For each repository, it will:
-  - Check if the repository hasn't been updated within the last year.
-  - If it hasn't been updated, it will create an issue in the repository to notify the maintainers. The issue will include details about how to avoid the repository being archived and how to archive the repository manually.
-  - If an issue already exists for the repository, it will check how long ago the issue was created.
-  - If the issue was created more than 30 days ago, the tool will archive the repository.
+    - Check if the repository hasn't been updated within the last year.
+    - If it hasn't been updated, it will create an issue in the repository to notify the maintainers. The issue will include details about how to avoid the repository being archived and how to archive the repository manually.
+    - If an issue already exists for the repository, it will check how long ago the issue was created.
+    - If the issue was created more than 30 days ago, the tool will archive the repository.
 
 In depth information on this process is available within the [Technical Documentation](./technical_documentation/the_process.md).
 
