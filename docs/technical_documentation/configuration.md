@@ -8,17 +8,17 @@ The `config.json` file contains the following:
 
 ```json
 {
-  "features": {
-    "show_log_locally": false,
-    "use_local_config": false
-  },
-  "archive_configuration": {
-    "archive_threshold": 365,
-    "notification_period": 30,
-    "notification_issue_tag": "Archive Notice",
-    "exemption_filename": ["ArchiveExemption.txt", "ArchiveExemption.md"],
-    "maximum_notifications": 1
-  }
+    "features": {
+        "show_log_locally": false,
+        "use_local_config": false
+    },
+    "archive_configuration": {
+        "archive_threshold": 365,
+        "notification_period": 30,
+        "notification_issue_tag": "Archive Notice",
+        "exemption_filename": ["ArchiveExemption.txt", "ArchiveExemption.md"],
+        "maximum_notifications": 1
+    }
 }
 ```
 
@@ -76,17 +76,17 @@ When testing locally, you might set the `config.json` file as follows:
 
 ```json
 {
-  "features": {
-    "show_log_locally": true,
-    "use_local_config": true
-  },
-  "archive_configuration": {
-    "archive_threshold": 365,
-    "notification_period": 30,
-    "notification_issue_tag": "Archive Notice",
-    "exemption_filename": ["ArchiveExemption.txt", "ArchiveExemption.md"],
-    "maximum_notifications": 0
-  }
+    "features": {
+        "show_log_locally": true,
+        "use_local_config": true
+    },
+    "archive_configuration": {
+        "archive_threshold": 365,
+        "notification_period": 30,
+        "notification_issue_tag": "Archive Notice",
+        "exemption_filename": ["ArchiveExemption.txt", "ArchiveExemption.md"],
+        "maximum_notifications": 0
+    }
 }
 ```
 
@@ -98,17 +98,17 @@ When deploying to AWS, the `config.json` file should be set as follows:
 
 ```json
 {
-  "features": {
-    "show_log_locally": false,
-    "use_local_config": false
-  },
-  "archive_configuration": {
-    "archive_threshold": 365,
-    "notification_period": 30,
-    "notification_issue_tag": "Archive Notice",
-    "exemption_filename": ["ArchiveExemption.txt", "ArchiveExemption.md"],
-    "maximum_notifications": 200
-  }
+    "features": {
+        "show_log_locally": false,
+        "use_local_config": false
+    },
+    "archive_configuration": {
+        "archive_threshold": 365,
+        "notification_period": 30,
+        "notification_issue_tag": "Archive Notice",
+        "exemption_filename": ["ArchiveExemption.txt", "ArchiveExemption.md"],
+        "maximum_notifications": 200
+    }
 }
 ```
 

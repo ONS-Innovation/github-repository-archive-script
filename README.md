@@ -196,7 +196,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
     ...
     ```
 
-    **Please Note:** If uncommenting the above in `main.py`, make sure you re-comment the code *before* pushing back to GitHub.
+    **Please Note:** If uncommenting the above in `main.py`, make sure you re-comment the code _before_ pushing back to GitHub.
 
 2. Export the required environment variables:
 
