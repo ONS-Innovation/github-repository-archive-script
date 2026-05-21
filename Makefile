@@ -22,10 +22,15 @@ format:  ## Format the code.
 	poetry run black src
 	poetry run ruff check src --fix
 
+.PHONY: md-fix
+md-fix: ## Run markdown linting with Markdownlint and fix issues.
+	sh ./shell_scripts/md_fix.sh
+
 .PHONY: lint
-lint:  ## Run all linters (black/ruff/pylint/mypy).
+lint:  ## Run all linters (black/ruff/pylint/mypy/markdownlint).
 	poetry run black --check src
 	poetry run ruff check src
+	make md-fix
 	make mypy
 
 .PHONY: test
