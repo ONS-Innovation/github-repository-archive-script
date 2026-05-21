@@ -130,13 +130,13 @@ Before the doing the following, make sure your Daemon is running. If using Colim
 
 3. Sign in with AWS SSO:
 
-  ```bash
-  aws sso login
-  ```
+    ```bash
+    aws sso login
+    ```
 
-  **Note:** See the Developer Onboarding Guide on the "Using AWS SSO for Local Development" page on Confluence to set up service profile selection on your local machine. This is essential as the `~/.aws` directory is mounted to the container, so it can use the SSO session for AWS authentication.
+    **Note:** See the Developer Onboarding Guide on the "Using AWS SSO for Local Development" page on Confluence to set up service profile selection on your local machine. This is essential as the `~/.aws` directory is mounted to the container, so it can use the SSO session for AWS authentication.
 
-1. Run the image.
+4. Run the image.
 
     ```bash
     docker run --platform linux/amd64 -p 9000:8080 \
@@ -164,7 +164,7 @@ Before the doing the following, make sure your Daemon is running. If using Colim
 
     Once the container is running, a local endpoint is created at `localhost:9000/2015-03-31/functions/function/invocations`.
 
-2. Check the container is running (Optional).
+5. Check the container is running (Optional).
 
     ```bash
     docker ps
@@ -177,7 +177,7 @@ Before the doing the following, make sure your Daemon is running. If using Colim
     ca890d30e24d   github-repository-archive-script   "/lambda-entrypoint.…"   5 seconds ago   Up 4 seconds   0.0.0.0:9000->8080/tcp, :::9000->8080/tcp   recursing_bartik
     ```
 
-3. Post to the endpoint (`localhost:9000/2015-03-31/functions/function/invocations`).
+6. Post to the endpoint (`localhost:9000/2015-03-31/functions/function/invocations`).
 
     ```bash
     curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{}'
@@ -185,7 +185,7 @@ Before the doing the following, make sure your Daemon is running. If using Colim
 
     This will run the Lambda function and, once complete, will return a success message.
 
-4. After testing stop the container.
+7. After testing stop the container.
 
     ```bash
     docker stop <container_id>
@@ -208,15 +208,15 @@ To run the Lambda function outside of a container, we need to execute the `handl
 
 2. Sign in with AWS SSO, and export the correct profile for this service:
 
-  ```bash
-  aws sso login
+    ```bash
+    aws sso login
 
-  export AWS_PROFILE=github-repository-archive-script
-  ```
+    export AWS_PROFILE=github-repository-archive-script
+    ```
 
-  This allows you to assume the AWS IAM role for the service, enabling the most secure development experience. This also means you will have limited permissions until you exit out of the profile.
+    This allows you to assume the AWS IAM role for the service, enabling the most secure development experience. This also means you will have limited permissions until you exit out of the profile.
 
-  **Note:** See the Developer Onboarding Guide on the "Using AWS SSO for Local Development" page on Confluence to set up service profile selection on your local machine.
+    **Note:** See the Developer Onboarding Guide on the "Using AWS SSO for Local Development" page on Confluence to set up service profile selection on your local machine.
 
 3. Export the required environment variables:
 
