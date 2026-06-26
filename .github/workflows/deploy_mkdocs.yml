@@ -4,9 +4,7 @@ name: Deploy MkDocs
 on:
   push:
     branches:
-      - master
       - main
-      - KEH-2331_add_zizmor
 permissions:
   contents: write
 jobs:
