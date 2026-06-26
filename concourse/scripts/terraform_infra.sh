@@ -25,6 +25,7 @@ lambda_memory=$(echo "$secrets" | jq -r .lambda_memory)
 export AWS_ACCESS_KEY_ID="$aws_access_key_id"
 export AWS_SECRET_ACCESS_KEY="$aws_secret_access_key"
 
+# kingfisher:ignore
 git config --global url."https://x-access-token:$github_access_token@github.com/".insteadOf "https://github.com/"
 
 if [ "${env}" != "prod" ]; then
