@@ -150,12 +150,6 @@ resource "aws_iam_role_policy_attachment" "eventbridge_policy" {
   policy_arn = aws_iam_policy.lambda_eventbridge_policy.arn
 }
 
-# Resolve the pushed image (must exist before terraform apply)
-data "aws_ecr_image" "lambda_image" {
-  repository_name = var.ecr_repository
-  image_tag       = var.container_ver
-}
-
 resource "aws_cloudwatch_log_group" "loggroup" {
   name              = "/aws/lambda/${aws_lambda_function.lambda_function.function_name}"
   retention_in_days = var.log_retention_days
