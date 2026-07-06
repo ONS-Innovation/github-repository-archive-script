@@ -54,4 +54,5 @@ terraform apply \
     -var "lambda_timeout=${lambda_timeout}" \
     -var "lambda_memory=${lambda_memory}" \
     -var "ecr_repository=${ecr_repository}" \
+    -var "container_ver=${tag}" \
     -auto-approve

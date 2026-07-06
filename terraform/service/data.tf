@@ -1,5 +1,5 @@
 data "aws_ecr_repository" "profile_lambda_ecr_repo" {
-  name = local.lambda_repo
+  name = var.ecr_repository
 }
 
 data "aws_ecr_image" "lambda_image" {

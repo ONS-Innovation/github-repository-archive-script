@@ -15,7 +15,7 @@ output "lambda_role" {
 
 output "repo_name" {
   description = "Name of the ECR repository"
-  value       = local.lambda_repo
+  value       = var.ecr_repository
 }
 
 output "rule_arn" {

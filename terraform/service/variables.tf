@@ -113,6 +113,5 @@ variable "business_owner_tag" {
 }
 
 locals {
-  lambda_repo = "${var.env_name}-${var.lambda_name}"
   bucket_name = "${var.env_name}-${var.aws_bucket_name}"
 }
