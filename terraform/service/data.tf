@@ -1,5 +1,10 @@
 data "aws_ecr_repository" "profile_lambda_ecr_repo" {
-  name = local.lambda_repo
+  name = var.ecr_repository
+}
+
+data "aws_ecr_image" "lambda_image" {
+  repository_name = data.aws_ecr_repository.profile_lambda_ecr_repo.name
+  image_tag       = var.container_ver
 }
 
 # Get the ecs infrastructure outputs from the remote state data source

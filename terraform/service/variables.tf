@@ -36,16 +36,21 @@ variable "lambda_name" {
   default     = "lambda-function"
 }
 
-variable "lambda_version" {
-  description = "AWS Lambda Image Version"
-  type        = string
-  default     = "v0.0.1"
-}
-
 variable "lambda_arch" {
   description = "AWS Lambda Architecture"
   type        = string
   default     = "x86_64"
+}
+
+variable "ecr_repository" {
+  description = "Name of the ECR repository containing the Lambda image"
+  type        = string
+}
+
+variable "container_ver" {
+  description = "Container tag"
+  type        = string
+  default     = "v1.0.0"
 }
 
 variable "lambda_timeout" {
@@ -108,6 +113,5 @@ variable "business_owner_tag" {
 }
 
 locals {
-  lambda_repo = "${var.env_name}-${var.lambda_name}"
   bucket_name = "${var.env_name}-${var.aws_bucket_name}"
 }
