@@ -6,9 +6,6 @@ set -euo pipefail
 
 apk add --no-cache jq
 
-aws_access_key_id=$(echo "$secrets" | jq -r .aws_access_key_id)
-aws_secret_access_key=$(echo "$secrets" | jq -r .aws_secret_access_key)
-
 lambda_name=$(echo "$secrets" | jq -r .lambda_name)
 env_name=$(echo "$secrets" | jq -r .env_name)
 ecr_repository=$(echo "$secrets" | jq -r .ecr_repository)
@@ -21,9 +18,6 @@ aws_bucket_name=$(echo "$secrets" | jq -r .aws_bucket_name)
 
 lambda_timeout=$(echo "$secrets" | jq -r .lambda_timeout)
 lambda_memory=$(echo "$secrets" | jq -r .lambda_memory)
-
-export AWS_ACCESS_KEY_ID="$aws_access_key_id"
-export AWS_SECRET_ACCESS_KEY="$aws_secret_access_key"
 
 # kingfisher:ignore
 git config --global url."https://x-access-token:$github_access_token@github.com/".insteadOf "https://github.com/"
