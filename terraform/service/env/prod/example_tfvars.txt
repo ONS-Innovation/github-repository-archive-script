@@ -1,7 +1,7 @@
 # Do NOT commit the real tfvars file to GitHub
 aws_secret_name         = "path-to-pem"
 aws_bucket_name         = "github-repository-archive-script"
-env_name                = "sdp-dev"
+env_name                = "sdp-prod"
 lambda_name             = "github-repository-archive-script"
 lambda_arch             = "x86_64"
 lambda_timeout          = 900
@@ -10,7 +10,7 @@ schedule                = "cron(0 6 ? * 2 *)"
 log_retention_days      = 90
 github_org              = "ONS-Innovation"
 github_app_client_id    = "123456789"
-ecr_repository          = "sdp-dev-github-repository-archive-script"
+ecr_repository          = "sdp-prod-github-repository-archive-script"
 container_ver           = "v1.0.0"
 region                  = "eu-west-2"
 project_tag             = "SDP"

@@ -7,6 +7,8 @@ data "aws_ecr_image" "lambda_image" {
   image_tag       = var.container_ver
 }
 
+data "aws_caller_identity" "current" {}
+
 # Get the ecs infrastructure outputs from the remote state data source
 data "terraform_remote_state" "vpc" {
   backend = "s3"
