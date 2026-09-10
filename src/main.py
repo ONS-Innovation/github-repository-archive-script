@@ -4,8 +4,9 @@ import datetime
 import json
 import os
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, ParamSpec, Tuple, TypeVar, Union
+from typing import Any, ParamSpec, TypeVar
 
 import boto3
 import github_api_toolkit
@@ -85,7 +86,7 @@ def get_environment_variable(variable_name: str) -> str:
     return variable
 
 
-def get_access_token(secret_manager: Any, secret_name: str, org: str, app_client_id: str) -> Tuple[str, str]:
+def get_access_token(secret_manager: Any, secret_name: str, org: str, app_client_id: str) -> tuple[str, str]:
     """Gets the access token from the AWS Secret Manager.
 
     Args:
@@ -162,7 +163,7 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
 def get_repository_page(
     logger: wrapped_logging,
     ql: github_api_toolkit.github_graphql_interface,
-    variables: dict[str, Union[str, int, None]],
+    variables: dict[str, str | int | None],
 ) -> Any:
     """Gets a page of non-archived repositories from a GitHub organization.
 
@@ -257,7 +258,7 @@ def filter_response(logger: wrapped_logging, response_json: dict) -> Any:
     return response_repositories
 
 
-def get_environment_variables() -> Tuple[str, str, str, str]:
+def get_environment_variables() -> tuple[str, str, str, str]:
     """Gets the environment variables required for the script.
 
     Raises:
@@ -328,7 +329,7 @@ def get_repositories(
     return repositories, number_of_pages
 
 
-def load_archive_rules(archive_rules: dict) -> Tuple[int, int, str, list[str], int]:
+def load_archive_rules(archive_rules: dict) -> tuple[int, int, str, list[str], int]:
     """Loads the archive rules from the configuration file.
 
     Args:
@@ -372,7 +373,7 @@ def process_repositories(  # noqa: C901, PLR0915
     repositories: list[dict],
     archive_criteria: list[str],
     notification_content: list[str],
-) -> Tuple[list, list]:
+) -> tuple[list, list]:
     """Processes the repositories to archive them if they meet the criteria, or create issues to notify the owners/contributors.
 
     Args:
