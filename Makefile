@@ -14,12 +14,12 @@
 
 ## 
 ## -----------------------------------------------
-## Makefile for GitHub Repositry Archive Script
+## Makefile for GitHub Repository Archive Script
 ## -----------------------------------------------
 ## 
 
 .PHONY: help
-help:				## This help message.
+help:			## This help message.
 	@sed -ne '/@sed/!s/## //p' $(MAKEFILE_LIST)
 
 ## 
@@ -42,13 +42,11 @@ clean: 			## Clean the temporary files.
 
 ##
 
-# Dependency installation
+# Environment specific dependencies
 
 .PHONY: install
 install:  		## Install the dependencies excluding dev.
 	poetry install --only main
-
-##
 
 .PHONY: install-dev
 install-dev:  		## Install the dependencies including dev.
@@ -56,9 +54,29 @@ install-dev:  		## Install the dependencies including dev.
 
 ##
 
-.PHONY: install-docs
-install-docs:  		## Install only the documentation dependencies
+# MkDocs
+
+.PHONY: docs-install
+docs-install: 			## Install the dependencies for MkDocs.
 	poetry install --only docs
+
+.PHONY: docs-serve
+docs-serve: docs-install 	## Serve the documentation locally.
+	poetry run mkdocs serve
+
+.PHONY: docs-build
+docs-build: docs-install 	## Build the documentation.
+	poetry run mkdocs build --site-dir site
+
+.PHONY: docs-lint
+docs-lint: 			## Install and run the documentation linter (Markdownlint).
+	npm install -g markdownlint-cli
+	markdownlint .
+
+.PHONY: docs-fix
+docs-fix: 			## Install and run the documentation linter with auto-fix (Markdownlint).
+	npm install -g markdownlint-cli
+	markdownlint . --fix
 
 ##
 
@@ -77,13 +95,9 @@ format:  		## Format the code.
 md-fix: 		## Run markdown linting with Markdownlint and fix issues.
 	sh ./shell_scripts/md_fix.sh
 
-##
-
 .PHONY: mypy
 mypy:  			## Run mypy.
 	poetry run mypy src
-
-##
 
 .PHONY: lint
 lint:  			## Run all linters (black/ruff/pylint/mypy/markdownlint).
