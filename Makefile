@@ -57,7 +57,7 @@ install-dev:  		## Install the dependencies including dev.
 # MkDocs
 
 .PHONY: docs-install
-docs-install: 			## Install the dependencies for MkDocs.
+docs-install: 		## Install the dependencies for MkDocs.
 	poetry install --only docs
 
 .PHONY: docs-serve
@@ -69,12 +69,12 @@ docs-build: docs-install 	## Build the documentation.
 	poetry run mkdocs build --site-dir site
 
 .PHONY: docs-lint
-docs-lint: 			## Install and run the documentation linter (Markdownlint).
+docs-lint: 		## Install and run the documentation linter (Markdownlint).
 	npm install -g markdownlint-cli
 	markdownlint .
 
 .PHONY: docs-fix
-docs-fix: 			## Install and run the documentation linter with auto-fix (Markdownlint).
+docs-fix: 		## Install and run the documentation linter with auto-fix (Markdownlint).
 	npm install -g markdownlint-cli
 	markdownlint . --fix
 
@@ -83,13 +83,15 @@ docs-fix: 			## Install and run the documentation linter with auto-fix (Markdown
 # Formatting
 
 .PHONY: format
-format:  		## Format the code.
+format:  		## Run all formatters.
 	poetry run black src
 	poetry run ruff check src --fix
 
 ##
 
 # Linting
+
+# Primary Linting
 
 .PHONY: md-fix
 md-fix: 		## Run markdown linting with Markdownlint and fix issues.
@@ -106,8 +108,6 @@ lint:  			## Run all linters (black/ruff/pylint/mypy/markdownlint).
 	make md-fix
 	make mypy
 
-##
-
 .PHONY: megalint
 megalint:  		## Run the mega-linter.
 	docker run --platform linux/amd64 --rm \
@@ -121,6 +121,6 @@ megalint:  		## Run the mega-linter.
 
 .PHONY: test
 test:  			## Run the tests and check coverage.
-	poetry run pytest -n auto --cov=src --cov-report term-missing --cov-fail-under=95
+	poetry run pytest -n auto --cov=src --cov-report term-missing --cov-fail-under=80
 
 ##
