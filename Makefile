@@ -83,9 +83,9 @@ docs-fix: 		## Install and run the documentation linter with auto-fix (Markdownl
 # Formatting
 
 .PHONY: format
-format:  		## Run all formatters.
-	poetry run black src
-	poetry run ruff check src --fix
+format:  		## Run formatters.
+	poetry run ruff check src tests --fix
+	poetry run ruff format src tests
 
 ##
 
@@ -99,21 +99,20 @@ md-fix: 		## Run markdown linting with Markdownlint and fix issues.
 
 .PHONY: mypy
 mypy:  			## Run mypy.
-	poetry run mypy src
+	poetry run mypy src tests
 
 .PHONY: lint
 lint:  			## Run all linters (black/ruff/pylint/mypy/markdownlint).
-	poetry run black --check src
-	poetry run ruff check src
-	make md-fix
-	make mypy
+	poetry run ruff check src tests
+	poetry run ruff format src tests --check
+	poetry run mypy src tests
 
 .PHONY: megalint
 megalint:  		## Run the mega-linter.
-	docker run --platform linux/amd64 --rm \
-		-v /var/run/docker.sock:/var/run/docker.sock:rw \
+	podman run --platform linux/amd64 --rm \
+		-v /var/run/docker.sock:/var/run/podman.sock:rw \
 		-v $(shell pwd):/tmp/lint:rw \
-		oxsecurity/megalinter:v8
+		ghcr.io/oxsecurity/megalinter:v10.1.0
 
 ##
 
