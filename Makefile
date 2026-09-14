@@ -102,10 +102,11 @@ mypy:  			## Run mypy.
 	poetry run mypy src tests
 
 .PHONY: lint
-lint:  			## Run all linters (black/ruff/pylint/mypy/markdownlint).
+lint:  			## Run all linters.
 	poetry run ruff check src tests
 	poetry run ruff format src tests --check
 	poetry run mypy src tests
+	make md-fix
 
 .PHONY: megalint
 megalint:  		## Run the mega-linter.
@@ -116,10 +117,26 @@ megalint:  		## Run the mega-linter.
 
 ##
 
+# Terraform
+
+.PHONY: tf-validate
+tf-validate:			## Validate the Terraform configuration.
+	terraform -chdir=terraform validate
+
+.PHONY: tf-lint
+tf-lint:			## Lint the Terraform configuration.
+	terraform -chdir=terraform fmt -check -recursive
+
+.PHONY: tf-fmt
+tf-fmt:				## Format the Terraform configuration.
+	terraform -chdir=terraform fmt -recursive
+
+## 
+
 # Testing
 
 .PHONY: test
 test:  			## Run the tests and check coverage.
-	poetry run pytest -n auto --cov=src --cov-report term-missing --cov-fail-under=80
+	poetry run pytest -n auto --cov=src --cov-report term-missing --cov-fail-under=90
 
 ##
