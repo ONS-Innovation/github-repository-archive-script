@@ -42,7 +42,7 @@ clean: 			## Clean the temporary files.
 
 ##
 
-# Environment specific dependencies
+# Dependencies
 
 .PHONY: install
 install:  		## Install the dependencies excluding dev.

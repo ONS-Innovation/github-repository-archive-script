@@ -1,0 +1,34 @@
+---
+name: Testing
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/**
+      - tests/**
+  pull_request:
+    branches: [main]
+    paths:
+      - src/**
+      - tests/**
+permissions:
+  contents: read
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Implement unit tests (TODO)
+        run: |
+          echo "TODO: Implement unit tests"
+  ui-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Implement UI tests (TODO)
+        run: |
+          echo "TODO: Implement UI tests"
+
+    # Add more test jobs as needed, such as integration tests, end-to-end tests, etc.
