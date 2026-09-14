@@ -5,7 +5,7 @@ on:
     branches: [KEH-2606-Team-Best-Practice-Update]
     paths: [docs/**]
   pull_request:
-    branches: [KEH-2606-Team-Best-Practice-Update]
+    branches: [main]
     paths: [docs/**]
 permissions:
   contents: read
