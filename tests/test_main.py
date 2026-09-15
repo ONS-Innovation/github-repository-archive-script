@@ -694,7 +694,7 @@ class TestProcessRepositories:
         )
 
         assert repositories_archived == []
-        assert issues_created == ["repo1", "repo2", "repo3", "repo4", "repo5"]  # noqa: PLR2004
+        assert issues_created == ["repo1", "repo2", "repo3", "repo4", "repo5"]
         assert mock_rest_instance.post.call_count == 5  # noqa: PLR2004
         mock_logger_instance.log_info.assert_called_with(
             "Maximum number of notifications reached. No more notifications will be made."
@@ -795,7 +795,7 @@ class TestProcessRepositories:
         )
 
         assert repositories_archived == []
-        assert issues_created == ["repo1", "repo2", "repo3", "repo4", "repo5"]  # noqa: PLR2004
+        assert issues_created == ["repo1", "repo2", "repo3", "repo4", "repo5"]
         assert mock_rest_instance.post.call_count == 5  # noqa: PLR2004
         mock_logger_instance.log_info.assert_called_with(
             "Skipping repository. Maximum number of notifications reached."
@@ -1054,7 +1054,7 @@ class TestHandler:
         mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "archive_configuration")
         mock_wrapped_logging.assert_called_once_with(True)
         mock_get_environment_variables.assert_called_once()
-        assert mock_boto3_session.return_value.client.call_count == 2
+        assert mock_boto3_session.return_value.client.call_count == 2  # noqa: PLR2004
         mock_boto3_session.return_value.client.assert_any_call(
             service_name="secretsmanager", region_name="mock_aws_default_region"
         )
@@ -1080,7 +1080,7 @@ class TestHandler:
             ["repo1", "repo2"],
             ["365", "30", "archive-notice", "5"],
             [
-                'Repository Archive Notice', 
+                'Repository Archive Notice',
                 "## Important Notice \n\nThis repository has not been updated in over 365 days and will be archived in 30 days if no action is taken. \n## Actions Required to Prevent Archive \n\n1. Update the repository by creating/updating an exemption file. \n   - The exemption file should be named one of the following: \n       - ArchiveExemption.txt \n       - ArchiveExemption.md \n\n   - This file should contain the reason why the repository should not be archived. \n   - If the file already exists, please update it with the latest information. \n2. Close this issue. \n\nAfter these actions, the repository will be exempt from archive for another 365 days. \n\n## Manual Archive \n\nIf you wish to archive this repository manually, please ensure the following: \n1. A notice is added to the repository `README.md` file indicating that the repository is archived. \n2. All issues and pull requests are closed (Optional but strongly recommended). \n3. Repository Admins / CODEOWNERS are up to date before archiving. This will make it easier to unarchive the repository in the future if needed. \n\nAfter these actions, you can archive the repository by going to the repository settings and selecting 'Archive this repository'. \n\n## Contact \n\nIf you have any questions about the process, please refer to the [FAQ section in the documentation](https://ons-innovation.github.io/github-repository-archive-script/). \nIf you still have questions, please contact an organisation administrator. \n\n"
             ],
         )
@@ -1166,7 +1166,7 @@ class TestCloudConfig:
     @patch("src.main.load_archive_rules")
     @patch("src.main.process_repositories")
     @patch("src.main.wrapped_logging")
-    def test_handler_success(
+    def test_handler_success(  # noqa: PLR0913
         self,
         mock_wrapped_logging,
         mock_process_repositories,
@@ -1236,7 +1236,7 @@ class TestCloudConfig:
     @patch("src.main.load_archive_rules")
     @patch("src.main.process_repositories")
     @patch("src.main.wrapped_logging")
-    def test_handler_s3_config(
+    def test_handler_s3_config(  # noqa: PLR0913
         self,
         mock_wrapped_logging,
         mock_process_repositories,
@@ -1306,7 +1306,7 @@ class TestCloudConfig:
     @patch("src.main.load_archive_rules")
     @patch("src.main.process_repositories")
     @patch("src.main.wrapped_logging")
-    def test_handler_s3_config_no_bucket(
+    def test_handler_s3_config_no_bucket(  # noqa: PLR0913
         self,
         mock_wrapped_logging,
         mock_process_repositories,
@@ -1361,7 +1361,7 @@ class TestCloudConfig:
     @patch("src.main.load_archive_rules")
     @patch("src.main.process_repositories")
     @patch("src.main.wrapped_logging")
-    def test_handler_s3_config_no_key(
+    def test_handler_s3_config_no_key(  # noqa: PLR0913
         self,
         mock_wrapped_logging,
         mock_process_repositories,

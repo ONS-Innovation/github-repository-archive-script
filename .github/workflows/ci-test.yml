@@ -14,21 +14,23 @@ on:
 permissions:
   contents: read
 jobs:
-  unit-tests:
+  test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - name: Implement unit tests (TODO)
-        run: |
-          echo "TODO: Implement unit tests"
-  ui-tests:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Implement UI tests (TODO)
-        run: |
-          echo "TODO: Implement UI tests"
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5 release
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        run: make install-dev
+
+      - name: Test
+        run: make test
 
     # Add more test jobs as needed, such as integration tests, end-to-end tests, etc.
