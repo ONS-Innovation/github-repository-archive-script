@@ -99,13 +99,13 @@ md-fix: 		## Run markdown linting with Markdownlint and fix issues.
 
 .PHONY: mypy
 mypy:  			## Run mypy.
-	poetry run mypy src tests
+	poetry run mypy src
 
 .PHONY: lint
 lint:  			## Run all linters.
-	poetry run ruff check src tests
-	poetry run ruff format src tests --check
-	poetry run mypy src tests
+	poetry run ruff check src
+	poetry run ruff format src --check
+	poetry run mypy src
 	make md-fix
 
 .PHONY: megalint
