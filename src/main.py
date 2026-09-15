@@ -399,7 +399,6 @@ def process_repositories(  # noqa: C901, PLR0915
     notice_issued = False
 
     for repository in repositories:
-
         last_update_string = get_dict_value(repository, "updatedAt")
         last_update = datetime.datetime.strptime(last_update_string, "%Y-%m-%dT%H:%M:%SZ")
 
@@ -417,7 +416,6 @@ def process_repositories(  # noqa: C901, PLR0915
         # Check if the repository issue has been open for more than 30 days
         # If the issue has been open for more than 30 days, archive the repository
         if len(repository["issues"]["nodes"]):
-
             issue_created_at = datetime.datetime.strptime(
                 repository["issues"]["nodes"][0]["createdAt"], "%Y-%m-%dT%H:%M:%SZ"
             )
@@ -455,7 +453,6 @@ def process_repositories(  # noqa: C901, PLR0915
         # Create an issue with the label and a message to the repository owner/contributors
 
         if issues_created < int(maximum_notifications):
-
             # Create Issue Label for Archive Notice if it does not exist
 
             label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
@@ -519,7 +516,6 @@ def process_repositories(  # noqa: C901, PLR0915
 
 
 def handler(event, context) -> str:  # type: ignore[no-untyped-def]
-
     # Load the configuration file
     config_file_path = "./config/config.json"
 
@@ -539,7 +535,6 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
     # Check whether to use local config or cloud config
 
     if not get_dict_value(features, "use_local_config"):
-
         bucket_name = os.getenv("S3_BUCKET_NAME")
 
         if not bucket_name:
