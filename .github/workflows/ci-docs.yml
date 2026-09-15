@@ -2,7 +2,7 @@
 name: Documentation CI
 on:
   push:
-    branches: [KEH-2606-Team-Best-Practice-Update]
+    branches: [main]
     paths: [docs/**]
   pull_request:
     branches: [main]
