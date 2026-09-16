@@ -11,8 +11,8 @@ A Python utility used to archive old, unused GitHub repositories from an organis
   - [Documentation](#documentation)
   - [Development](#development)
   - [Running the Project](#running-the-project)
-    - [Containerised (Recommended)](#containerised-recommended)
-    - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
+    - [Containerised](#containerised)
+    - [Outside of a Container](#outside-of-a-container)
   - [Deployment](#deployment)
     - [Deployments with Concourse](#deployments-with-concourse)
       - [Allowlisting your IP](#allowlisting-your-ip)
@@ -99,11 +99,11 @@ To work on this project, you need to:
     make install-dev
     ```
 
-To run the project during development, we recommend you [run the project outside of a container](#outside-of-a-container-development-only)
+To run the project during development, we recommend you run the project [Outside of a Container](#outside-of-a-container)
 
 ## Running the Project
 
-### Outside of a Container (Preferred)
+### Outside of a Container
 
 To run the Lambda function outside of a container, we need to execute the `handler()` function.
 
