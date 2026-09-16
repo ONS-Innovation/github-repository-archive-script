@@ -11,8 +11,8 @@ A Python utility used to archive old, unused GitHub repositories from an organis
   - [Documentation](#documentation)
   - [Development](#development)
   - [Running the Project](#running-the-project)
-    - [Containerised](#containerised)
     - [Outside of a Container](#outside-of-a-container)
+    - [Containerised](#containerised)
   - [Deployment](#deployment)
     - [Deployments with Concourse](#deployments-with-concourse)
       - [Allowlisting your IP](#allowlisting-your-ip)
@@ -204,6 +204,7 @@ Before the doing the following, make sure your Podman VM is running. Run `podman
     -e AWS_LAMBDA_FUNCTION_TIMEOUT=300 \
     github-repository-archive-script
     ```
+    
     (See section `Running the project - Outside of a container` for environment variables)
 
     Once the container is running, a local endpoint is created at `localhost:9000/2015-03-31/functions/function/invocations`.
@@ -382,7 +383,7 @@ Within the terraform directory, there is a [service](./terraform/service/) subdi
     **It is crucial that the completed `.tfvars` file does not get committed to GitHub.**
 
 3. Initialise the terraform using the appropriate `.tfbackend` file for the environment (`env/dev/backend-dev.tfbackend` or `env/prod/backend-prod.tfbackend`).
-    
+
     To execute this step, you need to be logged in to AWS:
 
     ```bash
@@ -392,8 +393,6 @@ Within the terraform directory, there is a [service](./terraform/service/) subdi
     ```bash
     terraform init -backend-config=env/dev/backend-dev.tfbackend -reconfigure
     ```
-
-
 
 4. Refresh the local state to ensure it is in sync with the backend, using the appropriate `.tfvars` file for the environment (`env/dev/dev.tfvars` or `env/prod/prod.tfvars`).
 
