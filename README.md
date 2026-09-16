@@ -204,7 +204,7 @@ Before the doing the following, make sure your Podman VM is running. Run `podman
     -e AWS_LAMBDA_FUNCTION_TIMEOUT=300 \
     github-repository-archive-script
     ```
-    
+
     (See section `Running the project - Outside of a container` for environment variables)
 
     Once the container is running, a local endpoint is created at `localhost:9000/2015-03-31/functions/function/invocations`.
