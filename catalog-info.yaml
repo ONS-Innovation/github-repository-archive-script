@@ -1,0 +1,20 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: github-repository-archive-script
+  description: AWS Lambda utility for archiving old and unused GitHub repositories.
+  annotations:
+    github.com/project-slug: ONS-Innovation/github-repository-archive-script
+  tags:
+    - python
+    - aws-lambda
+    - aws-eventbridge
+  links:
+    - url: https://ons-innovation.github.io/github-repository-archive-script
+      title: Repository Archive Script Documentation
+    - url: mailto:knowledge.exchange.hub@ons.gov.uk
+      title: Contact
+spec:
+  type: service
+  lifecycle: production
+  owner: keh-dev
