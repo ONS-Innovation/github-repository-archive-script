@@ -4,8 +4,9 @@ import datetime
 import json
 import os
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, ParamSpec, Tuple, TypeVar, Union
+from typing import Any, ParamSpec, TypeVar
 
 import boto3
 import github_api_toolkit
@@ -85,7 +86,7 @@ def get_environment_variable(variable_name: str) -> str:
     return variable
 
 
-def get_access_token(secret_manager: Any, secret_name: str, org: str, app_client_id: str) -> Tuple[str, str]:
+def get_access_token(secret_manager: Any, secret_name: str, org: str, app_client_id: str) -> tuple[str, str]:
     """Gets the access token from the AWS Secret Manager.
 
     Args:
@@ -162,7 +163,7 @@ def retry_on_error(max_retries: int = 3, delay: int = 2) -> Any:
 def get_repository_page(
     logger: wrapped_logging,
     ql: github_api_toolkit.github_graphql_interface,
-    variables: dict[str, Union[str, int, None]],
+    variables: dict[str, str | int | None],
 ) -> Any:
     """Gets a page of non-archived repositories from a GitHub organization.
 
@@ -257,7 +258,7 @@ def filter_response(logger: wrapped_logging, response_json: dict) -> Any:
     return response_repositories
 
 
-def get_environment_variables() -> Tuple[str, str, str, str]:
+def get_environment_variables() -> tuple[str, str, str, str]:
     """Gets the environment variables required for the script.
 
     Raises:
@@ -328,7 +329,7 @@ def get_repositories(
     return repositories, number_of_pages
 
 
-def load_archive_rules(archive_rules: dict) -> Tuple[int, int, str, list[str], int]:
+def load_archive_rules(archive_rules: dict) -> tuple[int, int, str, list[str], int]:
     """Loads the archive rules from the configuration file.
 
     Args:
@@ -372,7 +373,7 @@ def process_repositories(  # noqa: C901, PLR0915
     repositories: list[dict],
     archive_criteria: list[str],
     notification_content: list[str],
-) -> Tuple[list, list]:
+) -> tuple[list, list]:
     """Processes the repositories to archive them if they meet the criteria, or create issues to notify the owners/contributors.
 
     Args:
@@ -398,7 +399,6 @@ def process_repositories(  # noqa: C901, PLR0915
     notice_issued = False
 
     for repository in repositories:
-
         last_update_string = get_dict_value(repository, "updatedAt")
         last_update = datetime.datetime.strptime(last_update_string, "%Y-%m-%dT%H:%M:%SZ")
 
@@ -416,7 +416,6 @@ def process_repositories(  # noqa: C901, PLR0915
         # Check if the repository issue has been open for more than 30 days
         # If the issue has been open for more than 30 days, archive the repository
         if len(repository["issues"]["nodes"]):
-
             issue_created_at = datetime.datetime.strptime(
                 repository["issues"]["nodes"][0]["createdAt"], "%Y-%m-%dT%H:%M:%SZ"
             )
@@ -454,7 +453,6 @@ def process_repositories(  # noqa: C901, PLR0915
         # Create an issue with the label and a message to the repository owner/contributors
 
         if issues_created < int(maximum_notifications):
-
             # Create Issue Label for Archive Notice if it does not exist
 
             label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
@@ -518,7 +516,6 @@ def process_repositories(  # noqa: C901, PLR0915
 
 
 def handler(event, context) -> str:  # type: ignore[no-untyped-def]
-
     # Load the configuration file
     config_file_path = "./config/config.json"
 
@@ -538,7 +535,6 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
     # Check whether to use local config or cloud config
 
     if not get_dict_value(features, "use_local_config"):
-
         bucket_name = os.getenv("S3_BUCKET_NAME")
 
         if not bucket_name:
