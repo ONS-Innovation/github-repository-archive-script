@@ -24,7 +24,7 @@ The `config.json` file contains the following:
 
 ### `features` Section
 
-This section contains feature flags that control which the tool's features are enabled or disabled.
+This section contains feature flags that control which of the tool's features are enabled or disabled.
 
 #### `show_log_locally`
 

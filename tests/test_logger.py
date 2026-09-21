@@ -2,7 +2,6 @@ from src.logger import wrapped_logging
 
 
 class TestWrappedLogging:
-
     def test_log_info(self, caplog):
         logger = wrapped_logging(debug=False)
         logger.log_info("Info message")

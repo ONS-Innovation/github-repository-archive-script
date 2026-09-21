@@ -20,7 +20,7 @@ Each `README.md` should contain:
 The `/docs` folder should contain:
 
 - A description of what the project is
-- An overview of how the everything fits together in the project
+- An overview of how everything fits together in the project
 - An explanation of the tech stack
 - Details of the underlying dataset
 
@@ -35,7 +35,7 @@ In order to build an MkDocs deployment or serve the documentation locally, we ne
 2. Install MkDocs and its dependencies.
 
     ```bash
-    make install-docs
+    make docs-install
     ```
 
 3. You can now use MkDocs. To see a list of commands run the following:

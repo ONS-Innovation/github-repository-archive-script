@@ -11,8 +11,8 @@ A Python utility used to archive old, unused GitHub repositories from an organis
   - [Documentation](#documentation)
   - [Development](#development)
   - [Running the Project](#running-the-project)
-    - [Containerised (Recommended)](#containerised-recommended)
-    - [Outside of a Container (Development only)](#outside-of-a-container-development-only)
+    - [Outside of a Container](#outside-of-a-container)
+    - [Containerised](#containerised)
   - [Deployment](#deployment)
     - [Deployments with Concourse](#deployments-with-concourse)
       - [Allowlisting your IP](#allowlisting-your-ip)
@@ -32,8 +32,8 @@ A Python utility used to archive old, unused GitHub repositories from an organis
 
 ## Prerequisites
 
-- A Docker Daemon (Colima is recommended)
-  - [Colima](https://github.com/abiosoft/colima)
+- Podman container engine (daemonless, compatible with Docker)
+  - [Podman](https://podman.io/)
 - Terraform (For deployment)
   - [Terraform](https://www.terraform.io/)
 - Python >3.12
@@ -43,10 +43,10 @@ A Python utility used to archive old, unused GitHub repositories from an organis
 
 ## Makefile
 
-This repository makes use of a Makefile to execute common commands. To view all commands, execute `make all`.
+This repository makes use of a Makefile to execute common commands. To view all commands, execute `make help`.
 
 ```bash
-make all
+make help
 ```
 
 ## Documentation
@@ -56,13 +56,13 @@ This project uses [MkDocs](https://www.mkdocs.org/) for documentation. The docum
 1. Install MkDocs and its dependencies:
 
     ```bash
-    make install-docs
+    make docs-install
     ```
 
 2. Serve the documentation locally:
 
     ```bash
-    mkdocs serve
+    make docs-serve
     ```
 
 3. Open your web browser and navigate to `http://localhost:8000`.
@@ -76,13 +76,13 @@ To work on this project, you need to:
     Create:
 
     ```python
-    python3 -m venv venv
+    conda create -n venv python=3.12
     ```
 
     Activate:
 
     ```python
-    source venv/bin/activate
+    conda activate venv
     ```
 
 2. Install dependencies
@@ -99,99 +99,11 @@ To work on this project, you need to:
     make install-dev
     ```
 
-To run the project during development, we recommend you [run the project outside of a container](#outside-of-a-container-development-only)
+To run the project during development, we recommend you run the project [Outside of a Container](#outside-of-a-container)
 
 ## Running the Project
 
-### Containerised (Recommended)
-
-To run the project, a Docker Daemon is required to containerise and execute the project. We recommend using [Colima](https://github.com/abiosoft/colima).
-
-Before the doing the following, make sure your Daemon is running. If using Colima, run `colima start` to check this.
-
-1. Containerise the project.
-
-    ```bash
-    docker build -t github-repository-archive-script .
-    ```
-
-2. Check the image exists (Optional).
-
-    ```bash
-    docker images
-    ```
-
-    Example Output:
-
-    ```bash
-    REPOSITORY                         TAG       IMAGE ID       CREATED          SIZE
-    github-repository-archive-script   latest    b4a1e32ce51b   12 minutes ago   840MB
-    ```
-
-3. Sign in with AWS SSO:
-
-    ```bash
-    aws sso login
-    ```
-
-    **Note:** See the Developer Onboarding Guide on the "Using AWS SSO for Local Development" page on Confluence to set up service profile selection on your local machine. This is essential as the `~/.aws` directory is mounted to the container, so it can use the SSO session for AWS authentication.
-
-4. Run the image.
-
-    ```bash
-    docker run --platform linux/amd64 -p 9000:8080 \
-    -v ~/.aws:/root/.aws \
-    -e AWS_PROFILE=github-repository-archive-script \
-    -e AWS_DEFAULT_REGION=eu-west-2 \
-    -e AWS_SECRET_NAME=<secret_name> \
-    -e GITHUB_ORG=<org> \
-    -e GITHUB_APP_CLIENT_ID=<client_id> \
-    -e S3_BUCKET_NAME=<bucket_name> \
-    -e AWS_LAMBDA_FUNCTION_TIMEOUT=300 \
-    github-repository-archive-script
-    ```
-
-    When running the container, you are required to pass some environment variables:
-
-    | Variable                    | Description                                                                                        |
-    |-----------------------------|----------------------------------------------------------------------------------------------------|
-    | GITHUB_ORG                  | The organisation you would like to run the tool in.                                                |
-    | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API.          |
-    | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                              |
-    | AWS_SECRET_NAME             | The name of the AWS Secret Manager Secret to get.                                                  |
-    | AWS_BUCKET_NAME             | The name of the S3 bucket which has the cloud config in (Only used when `use_local_config=False`). |
-    | AWS_LAMBDA_FUNCTION_TIMEOUT | The timeout time in seconds (Default: 300s / 5 minutes).                                           |
-
-    Once the container is running, a local endpoint is created at `localhost:9000/2015-03-31/functions/function/invocations`.
-
-5. Check the container is running (Optional).
-
-    ```bash
-    docker ps
-    ```
-
-    Example Output:
-
-    ```bash
-    CONTAINER ID   IMAGE                              COMMAND                  CREATED         STATUS         PORTS                                       NAMES
-    ca890d30e24d   github-repository-archive-script   "/lambda-entrypoint.…"   5 seconds ago   Up 4 seconds   0.0.0.0:9000->8080/tcp, :::9000->8080/tcp   recursing_bartik
-    ```
-
-6. Post to the endpoint (`localhost:9000/2015-03-31/functions/function/invocations`).
-
-    ```bash
-    curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{}'
-    ```
-
-    This will run the Lambda function and, once complete, will return a success message.
-
-7. After testing stop the container.
-
-    ```bash
-    docker stop <container_id>
-    ```
-
-### Outside of a Container (Development only)
+### Outside of a Container
 
 To run the Lambda function outside of a container, we need to execute the `handler()` function.
 
@@ -228,12 +140,100 @@ To run the Lambda function outside of a container, we need to execute the `handl
     export GITHUB_APP_CLIENT_ID=<client_id>
     ```
 
-    An explanation of each variable is available within the [containerised instructions](#containerised-recommended).
+    An explanation of each variable:
+
+    | Variable                    | Description                                                                                        |
+    |-----------------------------|----------------------------------------------------------------------------------------------------|
+    | GITHUB_ORG                  | The organisation you would like to run the tool in.                                                |
+    | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API.          |
+    | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                              |
+    | AWS_SECRET_NAME             | The name of the AWS Secret Manager Secret to get.                                                  |
+    | AWS_BUCKET_NAME             | The name of the S3 bucket which has the cloud config in (Only used when `use_local_config=False`). |
+    | AWS_LAMBDA_FUNCTION_TIMEOUT | The timeout time in seconds (Default: 300s / 5 minutes).                                           |
 
 4. Run the script.
 
     ```bash
     python3 src/main.py
+    ```
+
+### Containerised
+
+To run the project, a Podman machine (Podman VM) is required to containerise and execute the project.
+
+Before the doing the following, make sure your Podman VM is running. Run `podman machine init` and `podman machine start` to check this.
+
+1. Containerise the project.
+
+    ```bash
+    podman build -t github-repository-archive-script .
+    ```
+
+2. Check the image exists (Optional).
+
+    ```bash
+    podman images
+    ```
+
+    Example Output:
+
+    ```bash
+    REPOSITORY                         TAG       IMAGE ID       CREATED          SIZE
+    github-repository-archive-script   latest    b4a1e32ce51b   12 minutes ago   840MB
+    ```
+
+3. Sign in with AWS SSO:
+
+    ```bash
+    aws sso login
+    ```
+
+    **Note:** See the Developer Onboarding Guide on the "Using AWS SSO for Local Development" page on Confluence to set up service profile selection on your local machine. This is essential as the `~/.aws` directory is mounted to the container, so it can use the SSO session for AWS authentication.
+
+4. Run the image.
+
+    ```bash
+    podman run --platform linux/amd64 -p 9000:8080 \
+    -v ~/.aws:/root/.aws \
+    -e AWS_PROFILE=github-repository-archive-script \
+    -e AWS_DEFAULT_REGION=eu-west-2 \
+    -e AWS_SECRET_NAME=<secret_name> \
+    -e GITHUB_ORG=<org> \
+    -e GITHUB_APP_CLIENT_ID=<client_id> \
+    -e S3_BUCKET_NAME=<bucket_name> \
+    -e AWS_LAMBDA_FUNCTION_TIMEOUT=300 \
+    github-repository-archive-script
+    ```
+
+    (See section `Running the project - Outside of a container` for environment variables)
+
+    Once the container is running, a local endpoint is created at `localhost:9000/2015-03-31/functions/function/invocations`.
+
+5. Check the container is running (Optional).
+
+    ```bash
+    podman ps
+    ```
+
+    Example Output:
+
+    ```bash
+    CONTAINER ID   IMAGE                              COMMAND                  CREATED         STATUS         PORTS                                       NAMES
+    ca890d30e24d   github-repository-archive-script   "/lambda-entrypoint.…"   5 seconds ago   Up 4 seconds   0.0.0.0:9000->8080/tcp, :::9000->8080/tcp   recursing_bartik
+    ```
+
+6. Post to the endpoint (`localhost:9000/2015-03-31/functions/function/invocations`).
+
+    ```bash
+    curl "http://localhost:9000/2015-03-31/functions/function/invocations" -d '{}'
+    ```
+
+    This will run the Lambda function and, once complete, will return a success message.
+
+7. After testing stop the container.
+
+    ```bash
+    podman stop <container_id>
     ```
 
 ## Deployment
@@ -326,23 +326,22 @@ The following instructions deploy to an ECR repository called `sdp-dev-repositor
 
 All of the commands (steps 2-5) are available for your environment within the AWS GUI. Navigate to ECR > {repository_name} > View push commands.
 
-1. Export AWS credential into the environment. This makes it easier to ensure you are using the correct credentials.
+1. Log in to AWS
 
     ```bash
-    export AWS_ACCESS_KEY_ID="<aws_access_key_id>"
-    export AWS_SECRET_ACCESS_KEY="<aws_secret_access_key>"
+    aws sso login
     ```
 
-2. Login to AWS.
+2. Login to AWS ECR.
 
     ```bash
-    aws ecr get-login-password --region eu-west-2 | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com
+    aws ecr get-login-password --region eu-west-2 | podman login --username AWS --password-stdin <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com
     ```
 
-3. Ensuring you're at the root of the repository, build a docker image of the project.
+3. Ensuring you're at the root of the repository, build a podman image of the project.
 
     ```bash
-    docker build -t sdp-dev-github-repository-archive-script .
+    podman build -t sdp-dev-github-repository-archive-script .
     ```
 
     **Please Note:** Change `sdp-dev-github-repository-archive-script` within the above command to `<env_name>-<lambda_name>`.
@@ -350,7 +349,7 @@ All of the commands (steps 2-5) are available for your environment within the AW
 4. Tag the docker image to push to AWS, using the correct versioning mentioned in [prerequisites](#deployment-prerequisites).
 
     ```bash
-    docker tag sdp-dev-github-repository-archive-script:latest <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com/sdp-dev-github-repository-archive-script:<semantic_version>
+    podman tag sdp-dev-github-repository-archive-script:latest <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com/sdp-dev-github-repository-archive-script:<semantic_version>
     ```
 
     **Please Note:** Change `sdp-dev-github-repository-archive-script` within the above command to `<env_name>-<lambda_name>`.
@@ -358,7 +357,7 @@ All of the commands (steps 2-5) are available for your environment within the AW
 5. Push the image to ECR.
 
     ```bash
-    docker push <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com/sdp-dev-github-repository-archive-script:<semantic_version>
+    podman push <aws_account_id>.dkr.ecr.eu-west-2.amazonaws.com/sdp-dev-github-repository-archive-script:<semantic_version>
     ```
 
 Once pushed, you should be able to see your new image version within the ECR repository.
@@ -385,15 +384,14 @@ Within the terraform directory, there is a [service](./terraform/service/) subdi
 
 3. Initialise the terraform using the appropriate `.tfbackend` file for the environment (`env/dev/backend-dev.tfbackend` or `env/prod/backend-prod.tfbackend`).
 
+    To execute this step, you need to be logged in to AWS:
+
     ```bash
-    terraform init -backend-config=env/dev/backend-dev.tfbackend -reconfigure
+    aws sso login
     ```
 
-    **Please Note:** This step requires an AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to be loaded into the environment if not already in place. This can be done using:
-
     ```bash
-    export AWS_ACCESS_KEY_ID="<aws_access_key_id>"
-    export AWS_SECRET_ACCESS_KEY="<aws_secret_access_key>"
+    terraform init -backend-config=env/dev/backend-dev.tfbackend -reconfigure
     ```
 
 4. Refresh the local state to ensure it is in sync with the backend, using the appropriate `.tfvars` file for the environment (`env/dev/dev.tfvars` or `env/prod/prod.tfvars`).
@@ -437,9 +435,10 @@ terraform destroy -var-file=env/dev/dev.tfvars
 
 ### GitHub Actions
 
-This file contains 2 GitHub Actions to automatically lint and test code on pull request creation and pushing to the main branch.
+This file contains 3 GitHub Actions to automatically lint and test code on pull request creation and pushing to the main branch.
 
-- [`ci.yml`](./.github/workflows/ci.yml)
+- [`ci-fmt.yml`](./.github/workflows/ci-fmt.yml)
+- [`ci-test.yml`](./.github/workflows/ci-test.yml)
 - [`mega-linter.yml`](./.github/workflows/mega-linter.yml)
 
 ### Running Tests Locally
@@ -470,4 +469,4 @@ To lint and test locally, you need to:
     make megalint
     ```
 
-**Please Note:** This requires a docker daemon to be running. We recommend using [Colima](https://github.com/abiosoft/colima) if using MacOS or Linux. A docker daemon is required because Megalinter is ran from a docker image.
+**Please Note:** This requires a running Podman VM.
