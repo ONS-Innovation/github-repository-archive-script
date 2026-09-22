@@ -103,32 +103,6 @@ To run the project during development, we recommend you run the project [Outside
 
 ## Running the Project
 
-### Choosing an execution mode
-
-Before running the script, you can choose between different execution modes by setting two environment variables:
-
-    CREATE_GITHUB_ISSUES
-    ENABLE_ARCHIVING
-
-If neither variable is set or both are set to any other value than "true", the script will run in harmless mode. This is the default:
-In this mode, no GitHub Issues will be created, and no repositories will be archived.
-
-To enable the script's archiving functionality, set the respective environment variable:
-
-``` bash
-export ENABLE_ARCHIVING=true
-```
-
-Thus, the script will archive repositories that meet the specified criteria.
-
-Likewise, to ensure GitHub Issues are created for newly discovered inactive repositories, set the other relevant environment variable:
-
-``` bash
-export CREATE_GITHUB_ISSUES=true
-```
-
-The next step is to choose which environment to run the script in.
-
 ### Outside of a Container
 
 To run the Lambda function outside of a container, we need to execute the `handler()` function.
@@ -158,6 +132,34 @@ To run the Lambda function outside of a container, we need to execute the `handl
 
 3. Export the required environment variables:
 
+    You can choose between different execution modes by setting two environment variables in your shell:
+
+        CREATE_GITHUB_ISSUES
+        ENABLE_ARCHIVING
+
+    If neither variable is set or both are set "false" (or any other value than "true"), the script will run in harmless mode: 
+    
+    ``` bash
+    export ENABLE_ARCHIVING=false
+    export CREATE_GITHUB_ISSUES=false
+    ```
+
+    This is the default. In harmless mode, no GitHub Issues will be created, and no repositories will be archived.
+
+    Alternatively, you can enable the script's archiving functionality by setting the respective environment variable:
+
+    ``` bash
+    export ENABLE_ARCHIVING=true
+    ```
+
+    Likewise, you can ensure GitHub Issues are created for newly discovered inactive repositories by setting:
+
+    ``` bash
+    export CREATE_GITHUB_ISSUES=true
+    ```
+
+    There are also several other environment variables that need to be set correctly for the script to run:
+
     ```bash
     export AWS_DEFAULT_REGION=eu-west-2
     export AWS_SECRET_NAME=<secret_name>
@@ -166,7 +168,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
     export GITHUB_APP_CLIENT_ID=<client_id>
     ```
 
-    An explanation of each variable:
+    Variable descriptions:
 
     | Variable                    | Description                                                                                        |
     |-----------------------------|----------------------------------------------------------------------------------------------------|
