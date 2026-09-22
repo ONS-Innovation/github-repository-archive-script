@@ -103,6 +103,32 @@ To run the project during development, we recommend you run the project [Outside
 
 ## Running the Project
 
+### Choosing an execution mode
+
+Before running the script, you can choose between different execution modes by setting two boolean environment variables:
+
+    CREATE_GITHUB_ISSUES
+    ENABLE_ARCHIVING
+
+If neither variable is set or both are set to false, the script will run in harmless mode. This is the default:
+In this mode, no GitHub Issues will be created, and no repositories will be archived.
+
+To enable the script's archiving functionality, set the respective environment variable:
+
+``` bash
+export ENABLE_ARCHIVING=true
+```
+
+Thus, the script will archive repositories that meet the specified criteria.
+
+Likewise, to ensure GitHub Issues are created for newly discovered inactive repositories, set the other relevant environment variable:
+
+``` bash
+export CREATE_GITHUB_ISSUES=true
+```
+
+The next step is to choose which environment to run the script in.
+
 ### Outside of a Container
 
 To run the Lambda function outside of a container, we need to execute the `handler()` function.
