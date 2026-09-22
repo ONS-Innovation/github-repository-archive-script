@@ -65,11 +65,12 @@ def get_dict_value(dictionary: dict, key: str) -> Any:
     return value
 
 
-def get_environment_variable(variable_name: str) -> str:
+def get_environment_variable(variable_name: str, default_value: str | None = None) -> str:
     """Gets an environment variable and raises an exception if it is not found.
 
     Args:
         variable_name (str): The name of the environment variable to get.
+        default_value (str | None): A default value to set the variable to if it is not set. Will raise an error for empty variables if not set.
 
     Raises:
         Exception: If the environment variable is not found.
@@ -79,7 +80,10 @@ def get_environment_variable(variable_name: str) -> str:
     """
     variable = os.getenv(variable_name)
 
-    if variable is None:
+    if default_value:
+        variable = default_value
+
+    if not variable:
         error_message = f"{variable_name} environment variable not found. Please check your environment variables."
         raise Exception(error_message)
 
@@ -256,27 +260,6 @@ def filter_response(logger: wrapped_logging, response_json: dict) -> Any:
     log_error_repositories(logger, response_json)
 
     return response_repositories
-
-
-def get_environment_variables() -> tuple[str, str, str, str]:
-    """Gets the environment variables required for the script.
-
-    Raises:
-        Exception: If any of the environment variables are not found.
-
-    Returns:
-        Tuple[str, str, str, str]: The GitHub organization, the GitHub App client ID, the AWS default region, and the AWS Secret Manager secret name.
-    """
-    try:
-        org = get_environment_variable("GITHUB_ORG")
-        app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
-
-        aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
-        aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
-    except Exception as e:
-        raise Exception(e) from e
-
-    return org, app_client_id, aws_default_region, aws_secret_name
 
 
 def get_repositories(
@@ -514,8 +497,7 @@ def process_repositories(  # noqa: C901, PLR0915
 
     return repositories_archived, repository_issues_created
 
-
-def handler(event, context) -> str:  # type: ignore[no-untyped-def]
+def handler(event: None, context: None) -> str:  # noqa: PLR0915
     # Load the configuration file
     config_file_path = "./config/config.json"
 
@@ -569,7 +551,14 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     # Get the environment variables
 
-    org, app_client_id, aws_default_region, aws_secret_name = get_environment_variables()
+    create_github_issues = get_environment_variable("CREATE_GITHUB_ISSUES", "false")
+    enable_archiving = get_environment_variable("ENABLE_ARCHIVING", "false")
+
+    org = get_environment_variable("GITHUB_ORG")
+    app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
+
+    aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
+    aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
 
     logger.log_info("Environment variables retrieved.")
 

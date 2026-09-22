@@ -105,12 +105,12 @@ To run the project during development, we recommend you run the project [Outside
 
 ### Choosing an execution mode
 
-Before running the script, you can choose between different execution modes by setting two boolean environment variables:
+Before running the script, you can choose between different execution modes by setting two environment variables:
 
     CREATE_GITHUB_ISSUES
     ENABLE_ARCHIVING
 
-If neither variable is set or both are set to false, the script will run in harmless mode. This is the default:
+If neither variable is set or both are set to any other value than "true", the script will run in harmless mode. This is the default:
 In this mode, no GitHub Issues will be created, and no repositories will be archived.
 
 To enable the script's archiving functionality, set the respective environment variable:
