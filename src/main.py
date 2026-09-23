@@ -356,6 +356,8 @@ def process_repositories(  # noqa: C901, PLR0915
     repositories: list[dict],
     archive_criteria: list[str],
     notification_content: list[str],
+    enable_archiving: str,
+    create_github_issues: str,
 ) -> tuple[list, list]:
     """Processes the repositories to archive them if they meet the criteria, or create issues to notify the owners/contributors.
 
@@ -392,12 +394,13 @@ def process_repositories(  # noqa: C901, PLR0915
             continue
 
         logger.log_info(
-            f"Repository {repository['name']} has not been updated in over {archive_threshold} days. Eligible for archiving."
+            f"Repository {repository['name']} has not been updated in over {archive_threshold} days. Checking for open Github Issues."
         )
 
         # If the repository has an issue with the label defined in the configuration file,
-        # Check if the repository issue has been open for more than 30 days
-        # If the issue has been open for more than 30 days, archive the repository
+        # check if the repository issue has been open for more than 30 days.
+        # If the issue has been open for more than 30 days and archiving is enabled,
+        # archive the repository
         if len(repository["issues"]["nodes"]):
             issue_created_at = datetime.datetime.strptime(
                 repository["issues"]["nodes"][0]["createdAt"], "%Y-%m-%dT%H:%M:%SZ"
@@ -409,18 +412,25 @@ def process_repositories(  # noqa: C901, PLR0915
 
                 archive_params = {"archived": True}
 
-                logger.log_info(
-                    f"Archiving repository {repository['name']}. Reason: Issue open for {issue_age.days} days."
-                )
+                if enable_archiving == "true":
+                    logger.log_info(
+                        f"Archiving repository {repository['name']}. Reason: Issue open for {issue_age.days} days."
+                    )
 
-                response = rest.patch(endpoint, archive_params)
+                    response = rest.patch(endpoint, archive_params)
 
-                if not handle_response(
-                    logger, response, f"Issue archiving repository. Skipping repository. Error: {response}"
-                ):
-                    continue
+                    if not handle_response(
+                        logger, response, f"Issue archiving repository. Skipping repository. Error: {response}"
+                    ):
+                        continue
 
-                logger.log_info(f"Successfully archived repository {repository['name']}")
+                    logger.log_info(f"Successfully archived repository {repository['name']}")
+
+                else:
+                    logger.log_info(
+                        f"Repository {repository['name']} is eligible for archiving. Reason: Github Issue open for {issue_age.days} days."
+                    )
+                    logger.log_info(f"Archiving disabled: Repository {repository['name']} was not archived.")
 
                 repositories_archived.append(repository["name"])
 
@@ -633,7 +643,7 @@ def handler(event: None, context: None) -> str:  # noqa: PLR0915
     notification_content = [notification_issue_title, notification_issue_body]
 
     repositories_archived, repository_issues_created = process_repositories(
-        interfaces, org, repositories, archive_criteria, notification_content
+        interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
     )
 
     logger.log_info(f"Repositories archived: {repositories_archived}")

@@ -210,3 +210,6 @@ terraform/service/highest_priority.txt
 
 # Ignore terraform.lock.hcl file
 .terraform.lock.hcl
+
+# Ignore local vscode settings
+.vscode/
