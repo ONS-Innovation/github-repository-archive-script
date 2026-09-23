@@ -430,7 +430,7 @@ def process_repositories(  # noqa: C901, PLR0915
                     logger.log_info(
                         f"Repository {repository['name']} is eligible for archiving. Reason: Github Issue open for {issue_age.days} days."
                     )
-                    logger.log_info(f"Archiving disabled: Repository {repository['name']} was not archived.")
+                    logger.log_info(f"Harmless mode: Repository {repository['name']} was not archived.")
 
                 repositories_archived.append(repository["name"])
 
@@ -446,54 +446,62 @@ def process_repositories(  # noqa: C901, PLR0915
         # Create an issue with the label and a message to the repository owner/contributors
 
         if issues_created < int(maximum_notifications):
-            # Create Issue Label for Archive Notice if it does not exist
+            # Only create GitHub issues if this function is enabled
+            if create_github_issues == "true":
+                # Create Issue Label for Archive Notice if it does not exist
 
-            label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
+                label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
 
-            response = rest.get(label_endpoint)
+                response = rest.get(label_endpoint)
 
-            if "404" in str(response):
-                label_params = {
-                    "name": notification_issue_tag,
-                    "color": "f29513",
-                    "description": "This label is used to notify repository owners and contributors of an impending archive.",
+                if "404" in str(response):
+                    label_params = {
+                        "name": notification_issue_tag,
+                        "color": "f29513",
+                        "description": "This label is used to notify repository owners and contributors of an impending archive.",
+                    }
+
+                    response = rest.post(f"/repos/{org}/{repository['name']}/labels", label_params)
+
+                    if not handle_response(
+                        logger,
+                        response,
+                        f"Error creating label {notification_issue_tag}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
+                    ):
+                        continue
+
+                    logger.log_info(f"Created label {notification_issue_tag} for repository {repository['name']}.")
+
+                # Create Issue for Archive Notice
+
+                endpoint = f"/repos/{org}/{repository['name']}/issues"
+
+                issue_params = {
+                    "title": notification_issue_title,
+                    "body": notification_issue_body,
+                    "labels": [notification_issue_tag],
                 }
 
-                response = rest.post(f"/repos/{org}/{repository['name']}/labels", label_params)
+                logger.log_info(
+                    f"Creating issue for repository {repository['name']}. Reason: No issue found with label {notification_issue_tag}."
+                )
+
+                response = rest.post(endpoint, issue_params)
 
                 if not handle_response(
                     logger,
                     response,
-                    f"Error creating label {notification_issue_tag}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
+                    f"Error creating issue for repository {repository['name']}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
                 ):
                     continue
 
-                logger.log_info(f"Created label {notification_issue_tag} for repository {repository['name']}.")
+                logger.log_info(f"Created issue for repository {repository['name']}.")
 
-            # Create Issue for Archive Notice
-
-            endpoint = f"/repos/{org}/{repository['name']}/issues"
-
-            issue_params = {
-                "title": notification_issue_title,
-                "body": notification_issue_body,
-                "labels": [notification_issue_tag],
-            }
-
-            logger.log_info(
-                f"Creating issue for repository {repository['name']}. Reason: No issue found with label {notification_issue_tag}."
-            )
-
-            response = rest.post(endpoint, issue_params)
-
-            if not handle_response(
-                logger,
-                response,
-                f"Error creating issue for repository {repository['name']}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
-            ):
-                continue
-
-            logger.log_info(f"Created issue for repository {repository['name']}.")
+            else:
+                logger.log_info(
+                    f"Repository {repository['name']} warrants creating a GitHub Issue. Reason: No issue found with label {notification_issue_tag}."
+                )
+                logger.log_info(f"Harmless mode: Issue for repository {repository['name']} was not created.")
 
             issues_created += 1
             repository_issues_created.append(repository["name"])
