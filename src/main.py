@@ -654,10 +654,27 @@ def handler(event: None, context: None) -> str:  # noqa: PLR0915
         interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
     )
 
-    logger.log_info(f"Repositories archived: {repositories_archived}")
-    logger.log_info(f"Issues created: {repository_issues_created}")
+    if enable_archiving == "true":
+        logger.log_info(f"Repositories archived: {repositories_archived}")
+    else:
+        logger.log_info(f"Repositories to archive: {repositories_archived}")
 
-    message = f"Script completed. {len(repositories)} repositories checked. {len(repository_issues_created)} issues created. {len(repositories_archived)} repositories archived."
+    if create_github_issues == "true":
+        logger.log_info(f"Issues created: {repository_issues_created}")
+    else:
+        logger.log_info(f"Issues to create: {repository_issues_created}")
+
+    message = f"Script completed. {len(repositories)} repositories checked. "
+
+    if create_github_issues == "true":
+        message += f"{len(repository_issues_created)} issues created. "
+    else:
+        message += f"{len(repository_issues_created)} issues to create. "
+
+    if enable_archiving == "true":
+        message += f"{len(repositories_archived)} repositories archived."
+    else:
+        message += f"{len(repositories_archived)} repositories to archive."
 
     logger.log_info(message)
 
