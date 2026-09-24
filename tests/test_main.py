@@ -688,8 +688,11 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -743,11 +746,14 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -784,8 +790,11 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -844,11 +853,14 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"       
+
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -857,6 +869,71 @@ class TestProcessRepositories:
         mock_logger_instance.log_info.assert_called_with(
             "Skipping repository. Maximum number of notifications reached."
         )
+
+    @patch("src.main.wrapped_logging")
+    @patch("github_api_toolkit.github_interface")
+    def test_process_repositories_issue_logging_in_harmless_mode(self, mock_rest, mock_logger):
+        mock_logger_instance = mock_logger.return_value
+        mock_rest_instance = mock_rest.return_value
+
+        # Make check for if the label exists successful
+        mock_rest_instance.get.return_value.status_code = 200
+
+        interfaces = [mock_logger_instance, mock_rest_instance]
+        org = "test_org"
+        repositories = [
+            {
+                "name": "repo1",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "repo2",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "repo3",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "repo4",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "repo5",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "repo6",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "repo7",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+        ]
+        archive_criteria = ["365", "30", "archive-notice", "5"]
+        notification_content = ["Repository Archive Notice", "This repository will be archived."]
+
+        enable_archiving = "false"
+        create_github_issues = "false"       
+
+        mock_response = Response()
+        mock_rest_instance.post.return_value = mock_response
+
+        repositories_archived, issues_created = process_repositories(
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
+        )
+
+        assert repositories_archived == []
+        assert issues_created == ["repo1", "repo2", "repo3", "repo4", "repo5"]
+        assert mock_rest_instance.post.call_count == 0  # noqa: PLR2004
 
     @patch("src.main.wrapped_logging")
     @patch("github_api_toolkit.github_interface")
