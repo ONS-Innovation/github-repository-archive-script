@@ -408,11 +408,11 @@ def process_repositories(  # noqa: C901, PLR0915
             issue_age = datetime.datetime.now() - issue_created_at
 
             if issue_age.days > int(notification_period):
-                endpoint = f"/repos/{org}/{repository['name']}"
-
-                archive_params = {"archived": True}
-
                 if enable_archiving == "true":
+                    endpoint = f"/repos/{org}/{repository['name']}"
+
+                    archive_params = {"archived": True}
+
                     logger.log_info(
                         f"Archiving repository {repository['name']}. Reason: Issue open for {issue_age.days} days."
                     )
