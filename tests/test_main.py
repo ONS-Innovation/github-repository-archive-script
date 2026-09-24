@@ -13,7 +13,7 @@ from src.main import (
     get_config_file,
     get_dict_value,
     get_environment_variable,
-    get_environment_variables,
+    # get_environment_variables,
     get_repositories,
     get_repository_page,
     handle_response,
@@ -343,32 +343,33 @@ class TestFilterResponse:
         ]
 
 
-class TestGetEnvironmentVariables:
-    @patch("src.main.get_environment_variable")
-    def test_get_environment_variables_success(self, mock_get_env_var):
-        mock_get_env_var.side_effect = [
-            "mock_org",
-            "mock_app_client_id",
-            "mock_aws_default_region",
-            "mock_aws_secret_name",
-        ]
+# To be deleted: get_environment_variables function has been removed from main.py
+# class TestGetEnvironmentVariables:
+#     @patch("src.main.get_environment_variable")
+#     def test_get_environment_variables_success(self, mock_get_env_var):
+#         mock_get_env_var.side_effect = [
+#             "mock_org",
+#             "mock_app_client_id",
+#             "mock_aws_default_region",
+#             "mock_aws_secret_name",
+#         ]
 
-        result = get_environment_variables()
+#         result = get_environment_variables()
 
-        assert result == ("mock_org", "mock_app_client_id", "mock_aws_default_region", "mock_aws_secret_name")
-        mock_get_env_var.assert_has_calls(
-            [call("GITHUB_ORG"), call("GITHUB_APP_CLIENT_ID"), call("AWS_DEFAULT_REGION"), call("AWS_SECRET_NAME")]
-        )
+#         assert result == ("mock_org", "mock_app_client_id", "mock_aws_default_region", "mock_aws_secret_name")
+#         mock_get_env_var.assert_has_calls(
+#             [call("GITHUB_ORG"), call("GITHUB_APP_CLIENT_ID"), call("AWS_DEFAULT_REGION"), call("AWS_SECRET_NAME")]
+#         )
 
-    @patch("src.main.get_environment_variable")
-    def test_get_environment_variables_failure(self, mock_get_env_var):
-        mock_get_env_var.side_effect = Exception("Environment variable not found")
+#     @patch("src.main.get_environment_variable")
+#     def test_get_environment_variables_failure(self, mock_get_env_var):
+#         mock_get_env_var.side_effect = Exception("Environment variable not found")
 
-        with pytest.raises(Exception) as excinfo:
-            get_environment_variables()
+#         with pytest.raises(Exception) as excinfo:
+#             get_environment_variables()
 
-        assert "Environment variable not found" in str(excinfo.value)
-        mock_get_env_var.assert_called_once_with("GITHUB_ORG")
+#         assert "Environment variable not found" in str(excinfo.value)
+#         mock_get_env_var.assert_called_once_with("GITHUB_ORG")
 
 
 class TestGetRepositories:
@@ -562,11 +563,14 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         mock_response = Response()
         mock_rest_instance.patch.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == ["repo1"]
@@ -594,12 +598,15 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         mock_response = Response()
 
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -612,6 +619,56 @@ class TestProcessRepositories:
                 "labels": ["archive-notice"],
             },
         )
+
+    @patch("src.main.wrapped_logging")
+    @patch("github_api_toolkit.github_interface")
+    def test_process_repositories_harmless_mode(self, mock_rest, mock_logger):
+        mock_logger_instance = mock_logger.return_value
+        mock_rest_instance = mock_rest.return_value
+
+        # Make check for if the label exists successful
+        mock_rest_instance.get.return_value.status_code = 200
+
+        interfaces = [mock_logger_instance, mock_rest_instance]
+        org = "test_org"
+        repositories = [
+            {
+                "name": "repo1",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {
+                    "nodes": [
+                        {
+                            "title": "issue1",
+                            "createdAt": (datetime.datetime.now() - datetime.timedelta(days=40)).strftime(
+                                "%Y-%m-%dT%H:%M:%SZ"
+                            ),
+                        }
+                    ]
+                },
+            },
+            {
+                "name": "repo2",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            }
+        ]
+        archive_criteria = ["365", "30", "archive-notice", "5"]
+        notification_content = ["Repository Archive Notice", "This repository will be archived."]
+
+        enable_archiving = "false"
+        create_github_issues = "false"
+
+        mock_response = Response()
+        mock_rest_instance.patch.return_value = mock_response
+
+        repositories_archived, issues_created = process_repositories(
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
+        )
+
+        assert repositories_archived == ["repo1"]
+        assert issues_created == ["repo2"]
+        mock_rest_instance.patch.assert_not_called()
+        mock_rest_instance.post.assert_not_called()
 
     @patch("src.main.wrapped_logging")
     @patch("github_api_toolkit.github_interface")
