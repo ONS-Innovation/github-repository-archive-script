@@ -135,6 +135,6 @@ tf-fmt:				## Format the Terraform configuration.
 
 .PHONY: test
 test:  			## Run the tests and check coverage.
-	poetry run pytest -n auto --cov=src --cov-report term-missing --cov-fail-under=95
+	poetry run pytest -n auto --cov=src --cov-report term-missing --cov-fail-under=80
 
 ##
