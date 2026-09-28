@@ -350,7 +350,7 @@ def handle_response(logger: wrapped_logging, response: Any, message: str) -> boo
     return True
 
 
-def process_repositories(  # noqa: C901, PLR0915
+def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
     interfaces: list[Any],
     org: str,
     repositories: list[dict],
@@ -367,6 +367,8 @@ def process_repositories(  # noqa: C901, PLR0915
         repositories (list[dict]): A list of repositories to process.
         archive_criteria (list[str]): A list containing the archive threshold, notification period, notification issue tag, and maximum notifications.
         notification_content (list[str]): A list containing the notification issue title and body.
+        enable_archiving (str): The value for the environment variable ENABLE_ARCHIVING.
+        create_github_issues (str): The value for the environment variable CREATE_GITHUB_ISSUES.
 
     Returns:
         Tuple[list, list]: A tuple containing two lists:
