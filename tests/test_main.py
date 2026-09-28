@@ -75,6 +75,10 @@ class TestGetEnvironmentVariable:
                 in str(excinfo.value)
             )
 
+    def test_get_environment_variable_with_default_value(self):
+        with patch.dict(os.environ, {"TEST_ENV_VAR": ""}):
+            result = get_environment_variable("TEST_ENV_VAR", "test_default_value")
+            assert result == "test_default_value"
 
 class TestGetAccessToken:
     def test_get_access_token_success(self):
@@ -343,35 +347,6 @@ class TestFilterResponse:
         ]
 
 
-# To be deleted: get_environment_variables function has been removed from main.py
-# class TestGetEnvironmentVariables:
-#     @patch("src.main.get_environment_variable")
-#     def test_get_environment_variables_success(self, mock_get_env_var):
-#         mock_get_env_var.side_effect = [
-#             "mock_org",
-#             "mock_app_client_id",
-#             "mock_aws_default_region",
-#             "mock_aws_secret_name",
-#         ]
-
-#         result = get_environment_variables()
-
-#         assert result == ("mock_org", "mock_app_client_id", "mock_aws_default_region", "mock_aws_secret_name")
-#         mock_get_env_var.assert_has_calls(
-#             [call("GITHUB_ORG"), call("GITHUB_APP_CLIENT_ID"), call("AWS_DEFAULT_REGION"), call("AWS_SECRET_NAME")]
-#         )
-
-#     @patch("src.main.get_environment_variable")
-#     def test_get_environment_variables_failure(self, mock_get_env_var):
-#         mock_get_env_var.side_effect = Exception("Environment variable not found")
-
-#         with pytest.raises(Exception) as excinfo:
-#             get_environment_variables()
-
-#         assert "Environment variable not found" in str(excinfo.value)
-#         mock_get_env_var.assert_called_once_with("GITHUB_ORG")
-
-
 class TestGetRepositories:
     @patch("src.main.get_repository_page")
     @patch("src.main.filter_response")
@@ -533,7 +508,6 @@ class TestLoadArchiveRules:
 
         with pytest.raises(ValueError):
             load_archive_rules(archive_rules)
-
 
 class TestProcessRepositories:
     @patch("src.main.wrapped_logging")
@@ -1173,16 +1147,15 @@ class TestHandler:
         }
         mock_get_dict_value.side_effect = lambda d, k: d[k]
         mock_wrapped_logging.return_value = MagicMock()
-        mock_get_environment_variable.side_effect = lambda environment_variable, default_value : {
-            ("CREATE_GITHUB_ISSUES", None): "false",
-            ("CREATE_GITHUB_ISSUES", "false"): "false",
-            ("ENABLE_ARCHIVING", None): "false",
-            ("ENABLE_ARCHIVING", "false"): "false",
-            ("GITHUB_ORG", None): "mock_organisation",
-            ("GITHUB_APP_CLIENT_ID", None): "mock_client_ID",
-            ("AWS_DEFAULT_REGION", None): "mock_aws_region",
-            ("AWS_SECRET_NAME", None): "mock_aws_secret_name"
+        environment_values = {
+            ("CREATE_GITHUB_ISSUES", "false"): "true",
+            ("ENABLE_ARCHIVING", "false"): "true",
+            ("GITHUB_ORG", None): "mock_org",
+            ("GITHUB_APP_CLIENT_ID", None): "mock_app_client_id",
+            ("AWS_DEFAULT_REGION", None): "mock_aws_default_region",
+            ("AWS_SECRET_NAME", None): "mock_aws_secret_name",
         }
+        mock_get_environment_variable.side_effect = lambda name, default=None: environment_values[(name, default)]
         mock_boto3_session.return_value.client.return_value = MagicMock()
         mock_get_access_token.return_value = ("mock_token", "mock_other_value")
         mock_github_graphql_interface.return_value = MagicMock()
@@ -1198,15 +1171,16 @@ class TestHandler:
         mock_process_repositories.return_value = (["Repo1"], ["Repo2"])
 
         # Call the handler function
-        result = handler({}, {})
+        result, execution_mode = handler({}, {})
 
         # Assertions
         assert result == "Script completed. 2 repositories checked. 1 issues created. 1 repositories archived."
+        assert execution_mode == "ENABLE_ARCHIVING=true --- CREATE_GITHUB_ISSUES=true"
         mock_get_config_file.assert_called_once_with("./config/config.json")
         mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "features")
         mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "archive_configuration")
         mock_wrapped_logging.assert_called_once_with(True)
-        assert mock_get_environment_variable.call_count == 50 # noqa: PLR2004
+        assert mock_get_environment_variable.call_count == 6 # noqa: PLR2004
         assert mock_boto3_session.return_value.client.call_count == 2  # noqa: PLR2004
         mock_boto3_session.return_value.client.assert_any_call(
             service_name="secretsmanager", region_name="mock_aws_default_region"
@@ -1236,6 +1210,8 @@ class TestHandler:
                 "Repository Archive Notice",
                 "## Important Notice \n\nThis repository has not been updated in over 365 days and will be archived in 30 days if no action is taken. \n## Actions Required to Prevent Archive \n\n1. Update the repository by creating/updating an exemption file. \n   - The exemption file should be named one of the following: \n       - ArchiveExemption.txt \n       - ArchiveExemption.md \n\n   - This file should contain the reason why the repository should not be archived. \n   - If the file already exists, please update it with the latest information. \n2. Close this issue. \n\nAfter these actions, the repository will be exempt from archive for another 365 days. \n\n## Manual Archive \n\nIf you wish to archive this repository manually, please ensure the following: \n1. A notice is added to the repository `README.md` file indicating that the repository is archived. \n2. All issues and pull requests are closed (Optional but strongly recommended). \n3. Repository Admins / CODEOWNERS are up to date before archiving. This will make it easier to unarchive the repository in the future if needed. \n\nAfter these actions, you can archive the repository by going to the repository settings and selecting 'Archive this repository'. \n\n## Contact \n\nIf you have any questions about the process, please refer to the [FAQ section in the documentation](https://ons-innovation.github.io/github-repository-archive-script/). \nIf you still have questions, please contact an organisation administrator. \n\n",
             ],
+            "true",
+            "true",
         )
 
     @patch("src.main.get_config_file")
@@ -1258,13 +1234,22 @@ class TestHandler:
         mock_github_graphql_interface,
         mock_get_access_token,
         mock_boto3_session,
-        mock_get_environment_variables,
+        mock_get_environment_variable,
         mock_wrapped_logging,
         mock_get_dict_value,
         mock_get_config_file,
     ):
         # Mocking the return values
         mock_get_config_file.side_effect = Exception("Configuration file not found")
+        environment_values = {
+            ("CREATE_GITHUB_ISSUES", "false"): "true",
+            ("ENABLE_ARCHIVING", "false"): "true",
+            ("GITHUB_ORG", None): "mock_org",
+            ("GITHUB_APP_CLIENT_ID", None): "mock_app_client_id",
+            ("AWS_DEFAULT_REGION", None): "mock_aws_default_region",
+            ("AWS_SECRET_NAME", None): "mock_aws_secret_name",
+        }
+        mock_get_environment_variable.side_effect = lambda name, default=None: environment_values[(name, default)]
 
         # Call the handler function
         with pytest.raises(Exception) as excinfo:
@@ -1275,7 +1260,7 @@ class TestHandler:
         mock_get_config_file.assert_called_once_with("./config/config.json")
         mock_get_dict_value.assert_not_called()
         mock_wrapped_logging.assert_not_called()
-        mock_get_environment_variables.assert_not_called()
+        mock_get_environment_variable.assert_not_called()
         mock_boto3_session.assert_not_called()
         mock_get_access_token.assert_not_called()
         mock_github_graphql_interface.assert_not_called()
@@ -1311,7 +1296,7 @@ class TestCloudConfig:
     @patch("src.main.get_config_file")
     @patch("src.main.get_dict_value")
     @patch("boto3.session.Session")
-    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_environment_variable")
     @patch("src.main.get_access_token")
     @patch("github_api_toolkit.github_graphql_interface")
     @patch("github_api_toolkit.github_interface")
@@ -1328,7 +1313,7 @@ class TestCloudConfig:
         mock_github_interface,
         mock_github_graphql_interface,
         mock_get_access_token,
-        mock_get_environment_variables,
+        mock_get_environment_variable,
         mock_boto3_session,
         mock_get_dict_value,
         mock_get_config_file,
@@ -1357,7 +1342,15 @@ class TestCloudConfig:
         mock_boto3_session.return_value = mock_session
         mock_session.client.return_value = MagicMock()
 
-        mock_get_environment_variables.return_value = ("org", "client_id", "region", "secret_name")
+        environment_values = {
+            ("CREATE_GITHUB_ISSUES", "false"): "true",
+            ("ENABLE_ARCHIVING", "false"): "true",
+            ("GITHUB_ORG", None): "mock_org",
+            ("GITHUB_APP_CLIENT_ID", None): "mock_app_client_id",
+            ("AWS_DEFAULT_REGION", None): "mock_aws_default_region",
+            ("AWS_SECRET_NAME", None): "mock_aws_secret_name",
+        }
+        mock_get_environment_variable.side_effect = lambda name, default=None: environment_values[(name, default)]
         mock_get_access_token.return_value = ("token", "other")
         mock_github_graphql_interface.return_value = MagicMock()
         mock_github_interface.return_value = MagicMock()
@@ -1365,12 +1358,14 @@ class TestCloudConfig:
         mock_load_archive_rules.return_value = (365, 30, "archive-notice", ["DO_NOT_ARCHIVE"], 5)
         mock_process_repositories.return_value = (["repo1"], ["repo2", "repo3"])
 
-        result = handler(None, None)
+        result, execution_mode = handler(None, None)
 
         assert "Script completed." in result
         assert "repositories checked" in result
         assert "issues created" in result
         assert "repositories archived" in result
+        assert "ENABLE_ARCHIVING" in execution_mode
+        assert "CREATE_GITHUB_ISSUES" in execution_mode
         mock_logger.log_info.assert_any_call("Initialised logging.")
         mock_logger.log_info.assert_any_call("Environment variables retrieved.")
         mock_logger.log_info.assert_any_call("Access token for GitHub API retrieved.")
@@ -1381,7 +1376,7 @@ class TestCloudConfig:
     @patch("src.main.get_config_file")
     @patch("src.main.get_dict_value")
     @patch("boto3.session.Session")
-    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_environment_variable")
     @patch("src.main.get_access_token")
     @patch("github_api_toolkit.github_graphql_interface")
     @patch("github_api_toolkit.github_interface")
@@ -1398,7 +1393,7 @@ class TestCloudConfig:
         mock_github_interface,
         mock_github_graphql_interface,
         mock_get_access_token,
-        mock_get_environment_variables,
+        mock_get_environment_variable,
         mock_boto3_session,
         mock_get_dict_value,
         mock_get_config_file,
@@ -1435,7 +1430,15 @@ class TestCloudConfig:
                 "Body": MagicMock(read=MagicMock(return_value=json.dumps(config).encode("utf-8")))
             }
 
-            mock_get_environment_variables.return_value = ("org", "client_id", "region", "secret_name")
+            environment_values = {
+                ("CREATE_GITHUB_ISSUES", "false"): "true",
+                ("ENABLE_ARCHIVING", "false"): "true",
+                ("GITHUB_ORG", None): "mock_org",
+                ("GITHUB_APP_CLIENT_ID", None): "mock_app_client_id",
+                ("AWS_DEFAULT_REGION", None): "mock_aws_default_region",
+                ("AWS_SECRET_NAME", None): "mock_aws_secret_name",
+            }
+            mock_get_environment_variable.side_effect = lambda name, default=None: environment_values[(name, default)]
             mock_get_access_token.return_value = ("token", "other")
             mock_github_graphql_interface.return_value = MagicMock()
             mock_github_interface.return_value = MagicMock()
@@ -1443,15 +1446,17 @@ class TestCloudConfig:
             mock_load_archive_rules.return_value = (365, 30, "archive-notice", ["DO_NOT_ARCHIVE"], 5)
             mock_process_repositories.return_value = (["repo1"], ["repo2", "repo3"])
 
-            result = handler(None, None)
+            result, execution_mode = handler(None, None)
 
             assert "Script completed." in result
             assert "repositories checked" in result
+            assert "ENABLE_ARCHIVING" in execution_mode
+            assert "CREATE_GITHUB_ISSUES" in execution_mode
 
     @patch("src.main.get_config_file")
     @patch("src.main.get_dict_value")
     @patch("boto3.session.Session")
-    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_environment_variable")
     @patch("src.main.get_access_token")
     @patch("github_api_toolkit.github_graphql_interface")
     @patch("github_api_toolkit.github_interface")
@@ -1468,7 +1473,7 @@ class TestCloudConfig:
         mock_github_interface,
         mock_github_graphql_interface,
         mock_get_access_token,
-        mock_get_environment_variables,
+        mock_get_environment_variable,
         mock_boto3_session,
         mock_get_dict_value,
         mock_get_config_file,
@@ -1506,7 +1511,7 @@ class TestCloudConfig:
     @patch("src.main.get_config_file")
     @patch("src.main.get_dict_value")
     @patch("boto3.session.Session")
-    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_environment_variable")
     @patch("src.main.get_access_token")
     @patch("github_api_toolkit.github_graphql_interface")
     @patch("github_api_toolkit.github_interface")
@@ -1523,7 +1528,7 @@ class TestCloudConfig:
         mock_github_interface,
         mock_github_graphql_interface,
         mock_get_access_token,
-        mock_get_environment_variables,
+        mock_get_environment_variable,
         mock_boto3_session,
         mock_get_dict_value,
         mock_get_config_file,
