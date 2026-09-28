@@ -133,12 +133,10 @@ To run the Lambda function outside of a container, we need to execute the `handl
 3. Export the required environment variables:
 
     You can choose between different execution modes by setting two environment variables in your shell:
+    CREATE_GITHUB_ISSUES and ENABLE_ARCHIVING
 
-        CREATE_GITHUB_ISSUES
-        ENABLE_ARCHIVING
+    If neither variable is set or both are set "false" (or any other value than "true"), the script will run in harmless mode:
 
-    If neither variable is set or both are set "false" (or any other value than "true"), the script will run in harmless mode: 
-    
     ``` bash
     export ENABLE_ARCHIVING=false
     export CREATE_GITHUB_ISSUES=false
