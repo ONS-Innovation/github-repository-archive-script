@@ -959,11 +959,14 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", notification_issue_tag, "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -997,11 +1000,14 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", notification_issue_tag, "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1035,11 +1041,14 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", notification_issue_tag, "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         mock_response = HTTPError()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1073,11 +1082,14 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", notification_issue_tag, "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         mock_response = HTTPError()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1108,11 +1120,14 @@ class TestProcessRepositories:
         archive_criteria = ["365", "30", "archive-notice", "5"]
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
+        enable_archiving = "true"
+        create_github_issues = "true"
+
         mock_response = HTTPError()
         mock_rest_instance.patch.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
-            interfaces, org, repositories, archive_criteria, notification_content
+            interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1129,7 +1144,7 @@ class TestHandler:
     @patch("src.main.get_config_file")
     @patch("src.main.get_dict_value")
     @patch("src.main.wrapped_logging")
-    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_environment_variable")
     @patch("boto3.session.Session")
     @patch("src.main.get_access_token")
     @patch("github_api_toolkit.github_graphql_interface")
@@ -1146,7 +1161,7 @@ class TestHandler:
         mock_github_graphql_interface,
         mock_get_access_token,
         mock_boto3_session,
-        mock_get_environment_variables,
+        mock_get_environment_variable,
         mock_wrapped_logging,
         mock_get_dict_value,
         mock_get_config_file,
@@ -1158,12 +1173,16 @@ class TestHandler:
         }
         mock_get_dict_value.side_effect = lambda d, k: d[k]
         mock_wrapped_logging.return_value = MagicMock()
-        mock_get_environment_variables.return_value = (
-            "mock_org",
-            "mock_app_client_id",
-            "mock_aws_default_region",
-            "mock_aws_secret_name",
-        )
+        mock_get_environment_variable.side_effect = lambda environment_variable, default_value : {
+            ("CREATE_GITHUB_ISSUES", None): "false",
+            ("CREATE_GITHUB_ISSUES", "false"): "false",
+            ("ENABLE_ARCHIVING", None): "false",
+            ("ENABLE_ARCHIVING", "false"): "false",
+            ("GITHUB_ORG", None): "mock_organisation",
+            ("GITHUB_APP_CLIENT_ID", None): "mock_client_ID",
+            ("AWS_DEFAULT_REGION", None): "mock_aws_region",
+            ("AWS_SECRET_NAME", None): "mock_aws_secret_name"
+        }
         mock_boto3_session.return_value.client.return_value = MagicMock()
         mock_get_access_token.return_value = ("mock_token", "mock_other_value")
         mock_github_graphql_interface.return_value = MagicMock()
@@ -1187,7 +1206,7 @@ class TestHandler:
         mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "features")
         mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "archive_configuration")
         mock_wrapped_logging.assert_called_once_with(True)
-        mock_get_environment_variables.assert_called_once()
+        assert mock_get_environment_variable.call_count == 50 # noqa: PLR2004
         assert mock_boto3_session.return_value.client.call_count == 2  # noqa: PLR2004
         mock_boto3_session.return_value.client.assert_any_call(
             service_name="secretsmanager", region_name="mock_aws_default_region"
@@ -1222,7 +1241,7 @@ class TestHandler:
     @patch("src.main.get_config_file")
     @patch("src.main.get_dict_value")
     @patch("src.main.wrapped_logging")
-    @patch("src.main.get_environment_variables")
+    @patch("src.main.get_environment_variable")
     @patch("boto3.session.Session")
     @patch("src.main.get_access_token")
     @patch("github_api_toolkit.github_graphql_interface")
