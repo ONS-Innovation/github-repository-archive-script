@@ -518,7 +518,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
     return repositories_archived, repository_issues_created
 
 
-def handler(event: None, context: None) -> str:  # noqa: PLR0915
+def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     # Load the configuration file
     config_file_path = "./config/config.json"
 
