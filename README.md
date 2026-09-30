@@ -132,6 +132,15 @@ To run the Lambda function outside of a container, we need to execute the `handl
 
 3. Export the required environment variables:
 
+    ``` bash
+    export ENABLE_ARCHIVING=false
+    export CREATE_GITHUB_ISSUES=false
+    ```
+
+    By default, the script will run in this mode (harmless mode), ensuring that no real changes are made to GitHub during local testing. See the environment variables below for more information.
+
+    There are also several other environment variables that need to be set correctly for the script to run:
+
     ```bash
     export AWS_DEFAULT_REGION=eu-west-2
     export AWS_SECRET_NAME=<secret_name>
@@ -140,10 +149,12 @@ To run the Lambda function outside of a container, we need to execute the `handl
     export GITHUB_APP_CLIENT_ID=<client_id>
     ```
 
-    An explanation of each variable:
+    Variable descriptions:
 
     | Variable                    | Description                                                                                        |
     |-----------------------------|----------------------------------------------------------------------------------------------------|
+    | ENABLE_ARCHIVING            | Specifies whether script execution involves archiving ("true") or not ("false").                   |
+    | CREATE_GITHUB_ISSUES        | Specifies whether script execution involves creating GitHub Issues ("true") or not ("false").      |
     | GITHUB_ORG                  | The organisation you would like to run the tool in.                                                |
     | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API.          |
     | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                              |
@@ -151,7 +162,15 @@ To run the Lambda function outside of a container, we need to execute the `handl
     | AWS_BUCKET_NAME             | The name of the S3 bucket which has the cloud config in (Only used when `use_local_config=False`). |
     | AWS_LAMBDA_FUNCTION_TIMEOUT | The timeout time in seconds (Default: 300s / 5 minutes).                                           |
 
-4. Run the script.
+4. Setup Configuration File
+
+    Ensure that the configuration file (`./config/config.json`) is setup so `show_log_locally` and `use_local_config` are set to `true`.
+
+    This will allow you to view logs locally during the execution of the script.
+
+    > **Note:** Ensure that config changes are **not** committed to the repository. If this is the case, the deployed system may be affected by unintended configuration changes.
+
+5. Run the script.
 
     ```bash
     python3 src/main.py

@@ -97,6 +97,18 @@ variable "business_owner_tag" {
   default     = "DST"
 }
 
+variable "enable_archiving" {
+  description = "Flag to enable archiving"
+  type        = bool
+  default     = true
+}
+
+variable "create_github_issues" {
+  description = "Flag to enable creating GitHub issues"
+  type        = bool
+  default     = true
+}
+
 locals {
   bucket_name    = "${var.env_name}-${var.aws_bucket_name}"
   aws_account_id = data.aws_caller_identity.current.account_id
