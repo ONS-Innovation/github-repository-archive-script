@@ -1,7 +1,7 @@
 import pytest
 
 @pytest.fixture
-def environment_lookup():
+def mock_environment_lookup():
     values = {
         ("CREATE_GITHUB_ISSUES", "false"): "true",
         ("ENABLE_ARCHIVING", "false"): "true",

@@ -136,7 +136,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
     export ENABLE_ARCHIVING=false
     export CREATE_GITHUB_ISSUES=false
     ```
-    
+
     By default, the script will run in this mode (harmless mode), ensuring that no real changes are made to GitHub during local testing. See the environment variables below for more information.
 
     There are also several other environment variables that need to be set correctly for the script to run:
