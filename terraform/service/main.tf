@@ -57,6 +57,8 @@ resource "aws_lambda_function" "lambda_function" {
       S3_BUCKET_NAME       = local.bucket_name
       IMAGE_DIGEST         = data.aws_ecr_image.lambda_image.image_digest
       IMAGE_TAG            = var.container_ver
+      ENABLE_ARCHIVING     = var.enable_archiving
+      CREATE_GITHUB_ISSUES = var.create_github_issues
     }
   }
 }
