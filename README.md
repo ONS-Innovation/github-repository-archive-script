@@ -177,7 +177,15 @@ To run the Lambda function outside of a container, we need to execute the `handl
     | AWS_BUCKET_NAME             | The name of the S3 bucket which has the cloud config in (Only used when `use_local_config=False`). |
     | AWS_LAMBDA_FUNCTION_TIMEOUT | The timeout time in seconds (Default: 300s / 5 minutes).                                           |
 
-4. Run the script.
+4. Setup Configuration File
+
+    Ensure that the configuration file (`./config/config.json`) is setup so `show_log_locally` and `use_local_config` are set to `true`.
+
+    This will allow you to view logs locally during the execution of the script.
+
+    > **Note:** Ensure that config changes are **not** committed to the repository. If this is the case, the deployed system may be affected by unintended configuration changes.
+
+5. Run the script.
 
     ```bash
     python3 src/main.py
