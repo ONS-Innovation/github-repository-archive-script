@@ -13,7 +13,6 @@ from src.main import (
     get_config_file,
     get_dict_value,
     get_environment_variable,
-    # get_environment_variables,
     get_repositories,
     get_repository_page,
     handle_response,
@@ -1317,6 +1316,7 @@ class TestCloudConfig:
         mock_boto3_session,
         mock_get_dict_value,
         mock_get_config_file,
+        environment_lookup,
     ):
         # Setup mocks
         mock_logger = MagicMock()
@@ -1342,15 +1342,7 @@ class TestCloudConfig:
         mock_boto3_session.return_value = mock_session
         mock_session.client.return_value = MagicMock()
 
-        environment_values = {
-            ("CREATE_GITHUB_ISSUES", "false"): "true",
-            ("ENABLE_ARCHIVING", "false"): "true",
-            ("GITHUB_ORG", None): "mock_org",
-            ("GITHUB_APP_CLIENT_ID", None): "mock_app_client_id",
-            ("AWS_DEFAULT_REGION", None): "mock_aws_default_region",
-            ("AWS_SECRET_NAME", None): "mock_aws_secret_name",
-        }
-        mock_get_environment_variable.side_effect = lambda name, default=None: environment_values[(name, default)]
+        mock_get_environment_variable.side_effect = environment_lookup
         mock_get_access_token.return_value = ("token", "other")
         mock_github_graphql_interface.return_value = MagicMock()
         mock_github_interface.return_value = MagicMock()
