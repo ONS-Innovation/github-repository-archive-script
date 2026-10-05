@@ -65,11 +65,12 @@ def get_dict_value(dictionary: dict, key: str) -> Any:
     return value
 
 
-def get_environment_variable(variable_name: str) -> str:
+def get_environment_variable(variable_name: str, default_value: str | None = None) -> str:
     """Gets an environment variable and raises an exception if it is not found.
 
     Args:
         variable_name (str): The name of the environment variable to get.
+        default_value (str | None): A default value to set the variable to if it is not set. Will raise an error for empty variables if not set.
 
     Raises:
         Exception: If the environment variable is not found.
@@ -79,7 +80,10 @@ def get_environment_variable(variable_name: str) -> str:
     """
     variable = os.getenv(variable_name)
 
-    if variable is None:
+    if default_value:
+        variable = default_value
+
+    if not variable:
         error_message = f"{variable_name} environment variable not found. Please check your environment variables."
         raise Exception(error_message)
 
@@ -258,27 +262,6 @@ def filter_response(logger: wrapped_logging, response_json: dict) -> Any:
     return response_repositories
 
 
-def get_environment_variables() -> tuple[str, str, str, str]:
-    """Gets the environment variables required for the script.
-
-    Raises:
-        Exception: If any of the environment variables are not found.
-
-    Returns:
-        Tuple[str, str, str, str]: The GitHub organization, the GitHub App client ID, the AWS default region, and the AWS Secret Manager secret name.
-    """
-    try:
-        org = get_environment_variable("GITHUB_ORG")
-        app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
-
-        aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
-        aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
-    except Exception as e:
-        raise Exception(e) from e
-
-    return org, app_client_id, aws_default_region, aws_secret_name
-
-
 def get_repositories(
     logger: wrapped_logging, ql: github_api_toolkit.github_graphql_interface, org: str, archive_rules: dict
 ) -> tuple[list[dict], int]:
@@ -367,12 +350,14 @@ def handle_response(logger: wrapped_logging, response: Any, message: str) -> boo
     return True
 
 
-def process_repositories(  # noqa: C901, PLR0915
+def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
     interfaces: list[Any],
     org: str,
     repositories: list[dict],
     archive_criteria: list[str],
     notification_content: list[str],
+    enable_archiving: str,
+    create_github_issues: str,
 ) -> tuple[list, list]:
     """Processes the repositories to archive them if they meet the criteria, or create issues to notify the owners/contributors.
 
@@ -382,6 +367,8 @@ def process_repositories(  # noqa: C901, PLR0915
         repositories (list[dict]): A list of repositories to process.
         archive_criteria (list[str]): A list containing the archive threshold, notification period, notification issue tag, and maximum notifications.
         notification_content (list[str]): A list containing the notification issue title and body.
+        enable_archiving (str): The value for the environment variable ENABLE_ARCHIVING.
+        create_github_issues (str): The value for the environment variable CREATE_GITHUB_ISSUES.
 
     Returns:
         Tuple[list, list]: A tuple containing two lists:
@@ -409,12 +396,13 @@ def process_repositories(  # noqa: C901, PLR0915
             continue
 
         logger.log_info(
-            f"Repository {repository['name']} has not been updated in over {archive_threshold} days. Eligible for archiving."
+            f"Repository {repository['name']} has not been updated in over {archive_threshold} days. Checking for open Github Issues."
         )
 
         # If the repository has an issue with the label defined in the configuration file,
-        # Check if the repository issue has been open for more than 30 days
-        # If the issue has been open for more than 30 days, archive the repository
+        # check if the repository issue has been open for more than 30 days.
+        # If the issue has been open for more than 30 days and archiving is enabled,
+        # archive the repository
         if len(repository["issues"]["nodes"]):
             issue_created_at = datetime.datetime.strptime(
                 repository["issues"]["nodes"][0]["createdAt"], "%Y-%m-%dT%H:%M:%SZ"
@@ -422,22 +410,29 @@ def process_repositories(  # noqa: C901, PLR0915
             issue_age = datetime.datetime.now() - issue_created_at
 
             if issue_age.days > int(notification_period):
-                endpoint = f"/repos/{org}/{repository['name']}"
+                if enable_archiving == "true":
+                    endpoint = f"/repos/{org}/{repository['name']}"
 
-                archive_params = {"archived": True}
+                    archive_params = {"archived": True}
 
-                logger.log_info(
-                    f"Archiving repository {repository['name']}. Reason: Issue open for {issue_age.days} days."
-                )
+                    logger.log_info(
+                        f"Archiving repository {repository['name']}. Reason: Issue open for {issue_age.days} days."
+                    )
 
-                response = rest.patch(endpoint, archive_params)
+                    response = rest.patch(endpoint, archive_params)
 
-                if not handle_response(
-                    logger, response, f"Issue archiving repository. Skipping repository. Error: {response}"
-                ):
-                    continue
+                    if not handle_response(
+                        logger, response, f"Issue archiving repository. Skipping repository. Error: {response}"
+                    ):
+                        continue
 
-                logger.log_info(f"Successfully archived repository {repository['name']}")
+                    logger.log_info(f"Successfully archived repository {repository['name']}")
+
+                else:
+                    logger.log_info(
+                        f"Repository {repository['name']} is eligible for archiving. Reason: Github Issue open for {issue_age.days} days."
+                    )
+                    logger.log_info(f"Harmless mode: Repository {repository['name']} was not archived.")
 
                 repositories_archived.append(repository["name"])
 
@@ -453,54 +448,62 @@ def process_repositories(  # noqa: C901, PLR0915
         # Create an issue with the label and a message to the repository owner/contributors
 
         if issues_created < int(maximum_notifications):
-            # Create Issue Label for Archive Notice if it does not exist
+            # Only create GitHub issues if this function is enabled
+            if create_github_issues == "true":
+                # Create Issue Label for Archive Notice if it does not exist
 
-            label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
+                label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
 
-            response = rest.get(label_endpoint)
+                response = rest.get(label_endpoint)
 
-            if "404" in str(response):
-                label_params = {
-                    "name": notification_issue_tag,
-                    "color": "f29513",
-                    "description": "This label is used to notify repository owners and contributors of an impending archive.",
+                if "404" in str(response):
+                    label_params = {
+                        "name": notification_issue_tag,
+                        "color": "f29513",
+                        "description": "This label is used to notify repository owners and contributors of an impending archive.",
+                    }
+
+                    response = rest.post(f"/repos/{org}/{repository['name']}/labels", label_params)
+
+                    if not handle_response(
+                        logger,
+                        response,
+                        f"Error creating label {notification_issue_tag}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
+                    ):
+                        continue
+
+                    logger.log_info(f"Created label {notification_issue_tag} for repository {repository['name']}.")
+
+                # Create Issue for Archive Notice
+
+                endpoint = f"/repos/{org}/{repository['name']}/issues"
+
+                issue_params = {
+                    "title": notification_issue_title,
+                    "body": notification_issue_body,
+                    "labels": [notification_issue_tag],
                 }
 
-                response = rest.post(f"/repos/{org}/{repository['name']}/labels", label_params)
+                logger.log_info(
+                    f"Creating issue for repository {repository['name']}. Reason: No issue found with label {notification_issue_tag}."
+                )
+
+                response = rest.post(endpoint, issue_params)
 
                 if not handle_response(
                     logger,
                     response,
-                    f"Error creating label {notification_issue_tag}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
+                    f"Error creating issue for repository {repository['name']}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
                 ):
                     continue
 
-                logger.log_info(f"Created label {notification_issue_tag} for repository {repository['name']}.")
+                logger.log_info(f"Created issue for repository {repository['name']}.")
 
-            # Create Issue for Archive Notice
-
-            endpoint = f"/repos/{org}/{repository['name']}/issues"
-
-            issue_params = {
-                "title": notification_issue_title,
-                "body": notification_issue_body,
-                "labels": [notification_issue_tag],
-            }
-
-            logger.log_info(
-                f"Creating issue for repository {repository['name']}. Reason: No issue found with label {notification_issue_tag}."
-            )
-
-            response = rest.post(endpoint, issue_params)
-
-            if not handle_response(
-                logger,
-                response,
-                f"Error creating issue for repository {repository['name']}. Skipping repository. Issues are probably disabled for the repository. Error: {response}",
-            ):
-                continue
-
-            logger.log_info(f"Created issue for repository {repository['name']}.")
+            else:
+                logger.log_info(
+                    f"Repository {repository['name']} warrants creating a GitHub Issue. Reason: No issue found with label {notification_issue_tag}."
+                )
+                logger.log_info(f"Harmless mode: Issue for repository {repository['name']} was not created.")
 
             issues_created += 1
             repository_issues_created.append(repository["name"])
@@ -515,7 +518,7 @@ def process_repositories(  # noqa: C901, PLR0915
     return repositories_archived, repository_issues_created
 
 
-def handler(event, context) -> str:  # type: ignore[no-untyped-def]
+def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     # Load the configuration file
     config_file_path = "./config/config.json"
 
@@ -569,7 +572,14 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
 
     # Get the environment variables
 
-    org, app_client_id, aws_default_region, aws_secret_name = get_environment_variables()
+    create_github_issues = get_environment_variable("CREATE_GITHUB_ISSUES", "false")
+    enable_archiving = get_environment_variable("ENABLE_ARCHIVING", "false")
+
+    org = get_environment_variable("GITHUB_ORG")
+    app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
+
+    aws_default_region = get_environment_variable("AWS_DEFAULT_REGION")
+    aws_secret_name = get_environment_variable("AWS_SECRET_NAME")
 
     logger.log_info("Environment variables retrieved.")
 
@@ -644,17 +654,20 @@ def handler(event, context) -> str:  # type: ignore[no-untyped-def]
     notification_content = [notification_issue_title, notification_issue_body]
 
     repositories_archived, repository_issues_created = process_repositories(
-        interfaces, org, repositories, archive_criteria, notification_content
+        interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
     )
 
-    logger.log_info(f"Repositories archived: {repositories_archived}")
-    logger.log_info(f"Issues created: {repository_issues_created}")
-
-    message = f"Script completed. {len(repositories)} repositories checked. {len(repository_issues_created)} issues created. {len(repositories_archived)} repositories archived."
+    message = f"Script completed. {len(repositories)} repositories checked. "
+    message += f"{len(repository_issues_created)} issues created. "
+    message += f"{len(repositories_archived)} repositories archived."
 
     logger.log_info(message)
 
-    return message
+    execution_mode = f"ENABLE_ARCHIVING={enable_archiving} --- CREATE_GITHUB_ISSUES={create_github_issues}"
+
+    logger.log_info(execution_mode)
+
+    return message, execution_mode
 
 
 # # Dev Only
