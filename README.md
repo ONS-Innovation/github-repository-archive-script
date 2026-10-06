@@ -139,6 +139,12 @@ To run the Lambda function outside of a container, we need to execute the `handl
 
     By default, the script will run in this mode (harmless mode), ensuring that no real changes are made to GitHub during local testing. See the environment variables below for more information.
 
+    A third environment variable prompts the script to process real GitHub data by default:
+    
+    ``` bash
+    export USE_TEST_DATA=false
+    ```
+
     There are also several other environment variables that need to be set correctly for the script to run:
 
     ```bash
@@ -155,6 +161,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
     |-----------------------------|----------------------------------------------------------------------------------------------------|
     | ENABLE_ARCHIVING            | Specifies whether script execution involves archiving ("true") or not ("false").                   |
     | CREATE_GITHUB_ISSUES        | Specifies whether script execution involves creating GitHub Issues ("true") or not ("false").      |
+    | USE_TEST_DATA               | Specifies whether the script will use synthetic test data ("true") or real GitHub data ("false").  |
     | GITHUB_ORG                  | The organisation you would like to run the tool in.                                                |
     | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API.          |
     | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                              |
