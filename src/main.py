@@ -599,8 +599,8 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
 
     logger.log_info("GitHub API interfaces created.")
 
-    # Get the repositories from GitHub
-
+    # Get the repositories from GitHub or locally from tests/synthetic_test_data.py
+    
     repositories, number_of_pages = get_repositories(logger, ql, org, archive_rules)
 
     logger.log_info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")

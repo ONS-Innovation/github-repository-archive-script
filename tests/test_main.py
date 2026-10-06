@@ -23,6 +23,8 @@ from src.main import (
     retry_on_error,
 )
 
+from synthetic_test_data import mock_repositories
+
 
 class TestGetConfigFile:
     def test_get_config_file_success(self):
@@ -895,7 +897,7 @@ class TestProcessRepositories:
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
         enable_archiving = "false"
-        create_github_issues = "false"       
+        create_github_issues = "false"
 
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
