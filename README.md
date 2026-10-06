@@ -149,7 +149,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
 
     ```bash
     export AWS_DEFAULT_REGION=eu-west-2
-    export AWS_SECRET_NAME=<secret_name>
+    export AWS_SECRET_NAME="<secret_name>"
     export S3_BUCKET_NAME=<bucket_name>
     export GITHUB_ORG=<org>
     export GITHUB_APP_CLIENT_ID=<client_id>
