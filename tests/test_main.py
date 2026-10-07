@@ -23,7 +23,7 @@ from src.main import (
     retry_on_error,
 )
 
-from synthetic_test_data import mock_repositories
+from tests.synthetic_test_data_template import synthetic_repositories
 
 
 class TestGetConfigFile:
@@ -469,6 +469,50 @@ class TestGetRepositories:
         mock_get_repository_page.assert_called_once()
         mock_filter_response.assert_called_once()
 
+
+class TestGetSyntheticRepositories:
+    def test_get_synthetic_repositories_success(self):
+        path_to_synthetic_data_file = "/tests/synthetic_test_data_template.py"
+        
+        result, number_of_pages = get_synthetic_repositories(path_to_synthetic_data_file)
+        assert result == [
+            {
+                "name": "test_repo1",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=100)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "test_repo2",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "test_repo3",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {
+                    "nodes": [
+                        {
+                            "title": "test_issue1",
+                            "createdAt": (datetime.datetime.now() - datetime.timedelta(days=20)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        }
+                    ]
+                },
+            },
+            {
+                "name": "test_repo4",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "issues": {
+                    "nodes": [
+                        {
+                            "title": "Repository Archive Notice",
+                            "createdAt": (datetime.datetime.now() - datetime.timedelta(days=40)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        }
+                    ]
+                },
+            },
+        ]
+        assert number_of_pages == "NNN"
+        # mock_rest_instance.assert_not_called()
 
 class TestLoadArchiveRules:
     def test_load_archive_rules_success(self):
