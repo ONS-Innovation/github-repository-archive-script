@@ -471,11 +471,11 @@ class TestGetRepositories:
 
 class TestGetSyntheticRepositories:
     def test_get_synthetic_repositories_success(self):
-        # path_to_synthetic_data_file (str): The location and name of a python data file as a dotted module name
-        path_to_synthetic_data_file = "tests.synthetic_test_data_template"
+        # path_to_synthetic_test_data (str): The location and name of a python data file as a dotted module name
+        path_to_synthetic_test_data = "tests.synthetic_test_data_template"
         
-        result, number_of_pages = get_synthetic_repositories(path_to_synthetic_data_file)
-        assert result == [
+        repositories, number_of_pages = get_synthetic_repositories(path_to_synthetic_test_data)
+        assert repositories == [
             {
                 "name": "test_repo1",
                 "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=100)).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -513,6 +513,15 @@ class TestGetSyntheticRepositories:
         ]
         assert number_of_pages == 0
         # mock_rest_instance.assert_not_called()
+
+    def test_get_synthetic_repositories_missing_data_file(self):
+        path_to_synthetic_test_data = "nonexistent_test_file"
+
+        with pytest.raises(ModuleNotFoundError) as e:
+            repositories, number_of_pages = get_synthetic_repositories(path_to_synthetic_test_data)
+        error_message = str(e.value)
+        assert error_message == "Test data not found!"
+
 
 class TestLoadArchiveRules:
     def test_load_archive_rules_success(self):

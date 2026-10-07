@@ -321,13 +321,18 @@ def get_synthetic_repositories(data_file_path: str = "tests.synthetic_test_data"
         data_file_path (str): The location and name of a python data file as a dotted module name
     
     Returns:
-        tuple[list[dict], int]: A tuple containing the list of repositories and the number of pages of repositories.
+        tuple[list[dict], int]: A tuple containing the list of repositories 
+        and 0 as a placeholder for the number of pages of repositories.
     """
-
-    module = importlib.import_module(data_file_path)
-    repositories = module.synthetic_repositories
-
     number_of_pages = 0
+    
+    try:
+        module = importlib.import_module(data_file_path)
+        repositories = module.synthetic_repositories
+
+    except ModuleNotFoundError:
+        error_message = "Test data not found!"
+        raise ModuleNotFoundError(error_message)
     
     return repositories, number_of_pages
 
