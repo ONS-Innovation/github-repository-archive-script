@@ -17,6 +17,8 @@ from src.logger import wrapped_logging
 T = TypeVar("T")
 P = ParamSpec("P")
 
+import importlib
+
 
 def get_config_file(path: str) -> Any:
     """Loads a configuration file as a dictionary.
@@ -309,6 +311,24 @@ def get_repositories(
 
         number_of_pages += 1
 
+    return repositories, number_of_pages
+
+
+def get_synthetic_repositories(data_file_path: str = "tests.synthetic_test_data") -> tuple[list[dict], int]:
+    """Gets all synthetically generated repositories from the specified file.
+
+    Args:
+        data_file_path (str): The location and name of a python data file as a dotted module name
+    
+    Returns:
+        tuple[list[dict], int]: A tuple containing the list of repositories and the number of pages of repositories.
+    """
+
+    module = importlib.import_module(data_file_path)
+    repositories = module.synthetic_repositories
+
+    number_of_pages = 0
+    
     return repositories, number_of_pages
 
 

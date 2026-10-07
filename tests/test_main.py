@@ -14,6 +14,7 @@ from src.main import (
     get_dict_value,
     get_environment_variable,
     get_repositories,
+    get_synthetic_repositories,
     get_repository_page,
     handle_response,
     handler,
@@ -22,8 +23,6 @@ from src.main import (
     process_repositories,
     retry_on_error,
 )
-
-from tests.synthetic_test_data_template import synthetic_repositories
 
 
 class TestGetConfigFile:
@@ -472,7 +471,8 @@ class TestGetRepositories:
 
 class TestGetSyntheticRepositories:
     def test_get_synthetic_repositories_success(self):
-        path_to_synthetic_data_file = "/tests/synthetic_test_data_template.py"
+        # path_to_synthetic_data_file (str): The location and name of a python data file as a dotted module name
+        path_to_synthetic_data_file = "tests.synthetic_test_data_template"
         
         result, number_of_pages = get_synthetic_repositories(path_to_synthetic_data_file)
         assert result == [
@@ -511,7 +511,7 @@ class TestGetSyntheticRepositories:
                 },
             },
         ]
-        assert number_of_pages == "NNN"
+        assert number_of_pages == 0
         # mock_rest_instance.assert_not_called()
 
 class TestLoadArchiveRules:
