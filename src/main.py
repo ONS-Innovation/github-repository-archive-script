@@ -331,7 +331,7 @@ def get_synthetic_repositories(data_file_path: str = "tests.synthetic_test_data"
         repositories = module.synthetic_repositories
 
     except ModuleNotFoundError:
-        error_message = "Test data not found!"
+        error_message = "Test data not found."
         raise ModuleNotFoundError(error_message)
     
     return repositories, number_of_pages
