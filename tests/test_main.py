@@ -473,7 +473,6 @@ class TestGetSyntheticRepositories:
     @patch("src.main.get_repository_page")
     @patch("src.main.filter_response")
     def test_get_synthetic_repositories_success(self, mock_get_repository_page, mock_filter_response):
-        # path_to_synthetic_test_data (str): The location and name of a python data file as a dotted module name
         path_to_synthetic_test_data = "tests.synthetic_test_data_template"
         
         repositories, number_of_pages = get_synthetic_repositories(path_to_synthetic_test_data)

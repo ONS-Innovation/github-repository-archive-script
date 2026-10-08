@@ -318,7 +318,8 @@ def get_synthetic_repositories(data_file_path: str = "tests.synthetic_test_data"
     """Gets all synthetically generated repositories from the specified file.
 
     Args:
-        data_file_path (str): The location and name of a python data file as a dotted module name
+        data_file_path (str): The location and name of a python data file as a dotted module name. This file must
+        contain a variable containg a list of mock repository dictionaries.
     
     Returns:
         tuple[list[dict], int]: A tuple containing the list of repositories 
@@ -383,6 +384,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
     notification_content: list[str],
     enable_archiving: str,
     create_github_issues: str,
+    use_test_data: str,
 ) -> tuple[list, list]:
     """Processes the repositories to archive them if they meet the criteria, or create issues to notify the owners/contributors.
 
@@ -435,7 +437,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
             issue_age = datetime.datetime.now() - issue_created_at
 
             if issue_age.days > int(notification_period):
-                if enable_archiving == "true":
+                if enable_archiving == "true" and use_test_data == "false":
                     endpoint = f"/repos/{org}/{repository['name']}"
 
                     archive_params = {"archived": True}
@@ -453,7 +455,10 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
                     logger.log_info(f"Successfully archived repository {repository['name']}")
 
-                else:
+                elif enable_archiving == "true" and use_test_data == "true":
+                    continue
+
+                elif enable_archiving == "false":
                     logger.log_info(
                         f"Repository {repository['name']} is eligible for archiving. Reason: Github Issue open for {issue_age.days} days."
                     )
@@ -474,7 +479,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
         if issues_created < int(maximum_notifications):
             # Only create GitHub issues if this function is enabled
-            if create_github_issues == "true":
+            if create_github_issues == "true" and use_test_data == "false":
                 # Create Issue Label for Archive Notice if it does not exist
 
                 label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
@@ -524,7 +529,10 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
                 logger.log_info(f"Created issue for repository {repository['name']}.")
 
-            else:
+            elif create_github_issues == "true" and use_test_data == "true":
+                continue
+
+            elif create_github_issues == "false":
                 logger.log_info(
                     f"Repository {repository['name']} warrants creating a GitHub Issue. Reason: No issue found with label {notification_issue_tag}."
                 )
