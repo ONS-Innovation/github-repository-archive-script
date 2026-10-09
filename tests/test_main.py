@@ -1194,6 +1194,126 @@ class TestProcessRepositories:
         assert issues_created == []
         mock_rest_instance.patch.assert_called_once_with(f"/repos/{org}/repo1", {"archived": True})
 
+    @patch("src.main.write_synthetic_repositories", create=True)
+    @patch("src.main.wrapped_logging")
+    @patch("github_api_toolkit.github_interface")
+    def test_process_repositories_archives_and_persists_synthetic_data(
+        self, mock_rest, mock_logger, mock_write_synthetic_repositories
+    ):
+        mock_logger_instance = mock_logger.return_value
+        mock_rest_instance = mock_rest.return_value
+
+        interfaces = [mock_logger_instance, mock_rest_instance]
+        org = "test_org"
+        repositories = [
+            {
+                "name": "test_repo1",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=100)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "test_repo2",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                "issues": {"nodes": []},
+            },
+            {
+                "name": "test_repo3",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                "issues": {
+                    "nodes": [
+                        {
+                            "title": "test_issue1",
+                            "createdAt": (datetime.datetime.now() - datetime.timedelta(days=20)).strftime(
+                                "%Y-%m-%dT%H:%M:%SZ"
+                            ),
+                        }
+                    ]
+                },
+            },
+            {
+                "name": "test_repo4",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                "issues": {
+                    "nodes": [
+                        {
+                            "title": "Repository Archive Notice",
+                            "createdAt": (datetime.datetime.now() - datetime.timedelta(days=40)).strftime(
+                                "%Y-%m-%dT%H:%M:%SZ"
+                            ),
+                        }
+                    ]
+                },
+            },
+        ]
+
+        repositories_archived, _ = process_repositories(
+            interfaces,
+            org,
+            repositories,
+            ["365", "30", "archive-notice", "5"],
+            ["Repository Archive Notice", "This repository will be archived."],
+            "true",
+            "true",
+            "true",
+        )
+
+        archived_repository = next(repo for repo in repositories if repo["name"] == "test_repo4")
+        assert archived_repository["archived"] is True
+        assert "test_repo4" in repositories_archived
+        mock_write_synthetic_repositories.assert_called_once_with(
+            "tests.synthetic_test_data",
+            repositories,
+        )
+        mock_rest_instance.patch.assert_not_called()
+
+    @patch("src.main.write_synthetic_repositories", create=True)
+    @patch("src.main.wrapped_logging")
+    @patch("github_api_toolkit.github_interface")
+    def test_process_repositories_creates_and_persists_synthetic_issue(
+        self, mock_rest, mock_logger, mock_write_synthetic_repositories
+    ):
+        interfaces = [mock_logger.return_value, mock_rest.return_value]
+        repositories = [
+            {
+                "name": "test_repo2",
+                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                ),
+                "issues": {"nodes": []},
+            }
+        ]
+
+        repositories_archived, issues_created = process_repositories(
+            interfaces,
+            "test_org",
+            repositories,
+            ["365", "30", "archive-notice", "5"],
+            ["Repository Archive Notice", "This repository will be archived."],
+            "true",
+            "true",
+            "true",
+        )
+
+        assert repositories_archived == []
+        assert issues_created == ["test_repo2"]
+        assert repositories[0]["issues"]["nodes"][0]["title"] == "Repository Archive Notice"
+        assert "createdAt" in repositories[0]["issues"]["nodes"][0]
+        mock_write_synthetic_repositories.assert_called_once_with(
+            "tests.synthetic_test_data",
+            repositories,
+        )
+        mock_rest.return_value.get.assert_not_called()
+        mock_rest.return_value.post.assert_not_called()
+        mock_rest.return_value.patch.assert_not_called()
+
 
 class TestHandler:
     # The methods in this class exclude the linting check PLR0913.
