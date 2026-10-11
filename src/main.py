@@ -315,7 +315,7 @@ def get_repositories(
 
 
 def get_synthetic_repositories() -> tuple[list[dict], int]:
-    """Gets all synthetically generated repositories from the specified file.
+    """Gets all synthetically generated repositories from the specified file/module.
 
     Args:
         None
