@@ -473,9 +473,7 @@ class TestGetSyntheticRepositories:
     @patch("src.main.get_repository_page")
     @patch("src.main.filter_response")
     def test_get_synthetic_repositories_success(self, mock_get_repository_page, mock_filter_response):
-        path_to_synthetic_test_data = "tests.synthetic_test_data_template"
-        
-        repositories, number_of_pages = get_synthetic_repositories(path_to_synthetic_test_data)
+        repositories, number_of_pages = get_synthetic_repositories()
         assert repositories == [
             {
                 "name": "test_repo1",
@@ -516,18 +514,13 @@ class TestGetSyntheticRepositories:
         mock_get_repository_page.assert_not_called()
         mock_filter_response.assert_not_called()
 
-    @patch("src.main.get_repository_page")
-    @patch("src.main.filter_response")
-    def test_get_synthetic_repositories_missing_data_file(self, mock_get_repository_page, mock_filter_response):
-        path_to_synthetic_test_data = "nonexistent_test_file"
-
+    @patch("src.main.importlib.import_module", side_effect=ModuleNotFoundError)
+    def test_get_synthetic_repositories_missing_data_file(self, mock_import_module):
         with pytest.raises(ModuleNotFoundError) as e:
-            repositories, number_of_pages = get_synthetic_repositories(path_to_synthetic_test_data)
-        error_message = str(e.value)
-        assert error_message == "Test data not found."
-        mock_get_repository_page.assert_not_called()
-        mock_filter_response.assert_not_called()
+            get_synthetic_repositories()
 
+        assert str(e.value) == "Test data not found."
+        mock_import_module.assert_called_once_with("tests.synthetic_test_data")
 
 class TestLoadArchiveRules:
     def test_load_archive_rules_success(self):

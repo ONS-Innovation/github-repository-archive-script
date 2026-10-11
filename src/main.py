@@ -314,21 +314,21 @@ def get_repositories(
     return repositories, number_of_pages
 
 
-def get_synthetic_repositories(data_file_path: str = "tests.synthetic_test_data") -> tuple[list[dict], int]:
+def get_synthetic_repositories() -> tuple[list[dict], int]:
     """Gets all synthetically generated repositories from the specified file.
 
     Args:
-        data_file_path (str): The location and name of a python data file as a dotted module name. This file must
-        contain a variable containg a list of mock repository dictionaries.
+        None
     
     Returns:
         tuple[list[dict], int]: A tuple containing the list of repositories 
         and 0 as a placeholder for the number of pages of repositories.
     """
+    DATA_FILE_MODULE = "tests.synthetic_test_data"
     number_of_pages = 0
     
     try:
-        module = importlib.import_module(data_file_path)
+        module = importlib.import_module(DATA_FILE_MODULE)
         repositories = module.synthetic_repositories
 
     except ModuleNotFoundError:
