@@ -523,7 +523,6 @@ class TestGetSyntheticRepositories:
         assert str(e.value) == "Test data not found."
         mock_import_module.assert_called_once_with("tests.synthetic_test_data")
 
-
 class TestWriteSyntheticRepositories:
     def test_write_synthetic_repositories(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
@@ -1203,7 +1202,7 @@ class TestProcessRepositories:
         assert issues_created == []
         mock_rest_instance.patch.assert_called_once_with(f"/repos/{org}/repo1", {"archived": True})
 
-    @patch("src.main.write_synthetic_repositories", create=True)
+    @patch("src.main.write_synthetic_repositories")
     @patch("src.main.wrapped_logging")
     @patch("github_api_toolkit.github_interface")
     def test_process_repositories_archives_and_persists_synthetic_data(
@@ -1214,13 +1213,6 @@ class TestProcessRepositories:
             {
                 "name": "test_repo1",
                 "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=100)).strftime(
-                    "%Y-%m-%dT%H:%M:%SZ"
-                ),
-                "issues": {"nodes": []},
-            },
-            {
-                "name": "test_repo2",
-                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime(
                     "%Y-%m-%dT%H:%M:%SZ"
                 ),
                 "issues": {"nodes": []},
@@ -1272,24 +1264,26 @@ class TestProcessRepositories:
 
         assert repositories_archived == ["test_repo4"]
 
-        original_repo2 = next(repo for repo in repositories if repo["name"] == "test_repo2")
+        original_repo3 = next(repo for repo in repositories if repo["name"] == "test_repo3")
         original_repo4 = next(repo for repo in repositories if repo["name"] == "test_repo4")
-        assert original_repo2["issues"]["nodes"] == []
+        assert original_repo3["issues"]["nodes"][0]["title"] == "test_issue1"
+        assert "archived" not in original_repo3
         assert "archived" not in original_repo4
 
         mock_write_synthetic_repositories.assert_called_once()
         synthetic_test_output_data = mock_write_synthetic_repositories.call_args.args[0]
 
-        output_repo2 = next(repo for repo in synthetic_test_output_data if repo["name"] == "test_repo2")
+        output_repo3 = next(repo for repo in synthetic_test_output_data if repo["name"] == "test_repo3")
         output_repo4 = next(repo for repo in synthetic_test_output_data if repo["name"] == "test_repo4")
-        assert output_repo2["issues"]["nodes"][0]["title"] == "Repository Archive Notice"
+        assert output_repo3["issues"]["nodes"][0]["title"] == "test_issue1"
+        assert "archived" not in output_repo3
         assert output_repo4["archived"] is True
 
         mock_rest.return_value.get.assert_not_called()
         mock_rest.return_value.post.assert_not_called()
         mock_rest.return_value.patch.assert_not_called()
 
-    @patch("src.main.write_synthetic_repositories", create=True)
+    @patch("src.main.write_synthetic_repositories")
     @patch("src.main.wrapped_logging")
     @patch("github_api_toolkit.github_interface")
     def test_process_repositories_creates_and_persists_synthetic_issue(
@@ -1305,13 +1299,15 @@ class TestProcessRepositories:
                 "issues": {"nodes": []},
             }
         ]
+        notification_issue_tag = "archive-notice"
+        notification_issue_body = "This repository will be archived."
 
         repositories_archived, issues_created = process_repositories(
             interfaces,
             "test_org",
             repositories,
-            ["365", "30", "archive-notice", "5"],
-            ["Repository Archive Notice", "This repository will be archived."],
+            ["365", "30", notification_issue_tag, "5"],
+            ["Repository Archive Notice", notification_issue_body],
             "true",
             "true",
             "true",
@@ -1323,9 +1319,11 @@ class TestProcessRepositories:
 
         mock_write_synthetic_repositories.assert_called_once()
         synthetic_test_output_data = mock_write_synthetic_repositories.call_args.args[0]
-        output_repo = synthetic_test_output_data[0]
-        created_issue = output_repo["issues"]["nodes"][0]
+        created_issue = synthetic_test_output_data[0]["issues"]["nodes"][0]
+
         assert created_issue["title"] == "Repository Archive Notice"
+        assert created_issue["body"] == notification_issue_body
+        assert created_issue["labels"] == [notification_issue_tag]
         assert "createdAt" in created_issue
 
         mock_rest.return_value.get.assert_not_called()

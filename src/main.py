@@ -19,6 +19,8 @@ P = ParamSpec("P")
 
 import importlib
 
+from copy import deepcopy
+
 
 def get_config_file(path: str) -> Any:
     """Loads a configuration file as a dictionary.
@@ -412,6 +414,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
     issues_created = 0
     repository_issues_created = []
     repositories_archived = []
+    synthetic_test_output = []
 
     logger, rest = interfaces
     archive_threshold, notification_period, notification_issue_tag, maximum_notifications = archive_criteria
@@ -428,6 +431,10 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
         # If the repository has been updated in the last year, skip it
         if last_update > cut_off_date:
             continue
+
+        # If use_test_data is enabled, add the repository to the synthetic test output
+        if use_test_data == "true":
+            synthetic_test_output.append(deepcopy(repository))
 
         logger.log_info(
             f"Repository {repository['name']} has not been updated in over {archive_threshold} days. Checking for open Github Issues."
@@ -463,7 +470,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
                     logger.log_info(f"Successfully archived repository {repository['name']}")
 
                 elif enable_archiving == "true" and use_test_data == "true":
-                    continue
+                    synthetic_test_output[-1]["archived"] = True
 
                 elif enable_archiving == "false":
                     logger.log_info(
@@ -485,7 +492,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
         # Create an issue with the label and a message to the repository owner/contributors
 
         if issues_created < int(maximum_notifications):
-            # Only create GitHub issues if this function is enabled
+            # Only create GitHub issues if this feature is enabled
             if create_github_issues == "true" and use_test_data == "false":
                 # Create Issue Label for Archive Notice if it does not exist
 
@@ -537,7 +544,14 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
                 logger.log_info(f"Created issue for repository {repository['name']}.")
 
             elif create_github_issues == "true" and use_test_data == "true":
-                continue
+                synthetic_test_output[-1]["issues"]["nodes"].append(
+                    {
+                        "title": notification_issue_title,
+                        "createdAt": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "body": notification_issue_body,
+                        "labels": [notification_issue_tag]
+                    }
+                )
 
             elif create_github_issues == "false":
                 logger.log_info(
@@ -554,6 +568,9 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
         else:
             logger.log_info("Skipping repository. Maximum number of notifications reached.")
+
+    if synthetic_test_output != []:
+        write_synthetic_repositories(synthetic_test_output)
 
     return repositories_archived, repository_issues_created
 
