@@ -631,6 +631,7 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
 
     create_github_issues = get_environment_variable("CREATE_GITHUB_ISSUES", "false")
     enable_archiving = get_environment_variable("ENABLE_ARCHIVING", "false")
+    use_test_data = get_environment_variable("USE_TEST_DATA", "false")
 
     org = get_environment_variable("GITHUB_ORG")
     app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
@@ -657,8 +658,10 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     logger.log_info("GitHub API interfaces created.")
 
     # Get the repositories from GitHub or locally from tests/synthetic_test_data.py
-    
-    repositories, number_of_pages = get_repositories(logger, ql, org, archive_rules)
+    if use_test_data == "true":
+        repositories, number_of_pages = get_synthetic_repositories()
+    else:
+        repositories, number_of_pages = get_repositories(logger, ql, org, archive_rules)
 
     logger.log_info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
 
@@ -711,7 +714,8 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     notification_content = [notification_issue_title, notification_issue_body]
 
     repositories_archived, repository_issues_created = process_repositories(
-        interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
+        interfaces, org, repositories, archive_criteria, notification_content, 
+        enable_archiving, create_github_issues, use_test_data
     )
 
     message = f"Script completed. {len(repositories)} repositories checked. "
@@ -720,7 +724,11 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
 
     logger.log_info(message)
 
-    execution_mode = f"ENABLE_ARCHIVING={enable_archiving} --- CREATE_GITHUB_ISSUES={create_github_issues}"
+    execution_mode = (
+        f"ENABLE_ARCHIVING={enable_archiving} --- "
+        f"CREATE_GITHUB_ISSUES={create_github_issues} --- "
+        f"USE_TEST_DATA={use_test_data}"
+    )
 
     logger.log_info(execution_mode)
 

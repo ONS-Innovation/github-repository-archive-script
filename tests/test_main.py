@@ -1346,12 +1346,14 @@ class TestHandler:
     @patch("github_api_toolkit.github_graphql_interface")
     @patch("github_api_toolkit.github_interface")
     @patch("src.main.get_repositories")
+    @patch("src.main.get_synthetic_repositories")
     @patch("src.main.load_archive_rules")
     @patch("src.main.process_repositories")
     def test_handler_success(  # noqa: PLR0913
         self,
         mock_process_repositories,
         mock_load_archive_rules,
+        mock_get_synthetic_repositories,
         mock_get_repositories,
         mock_github_interface,
         mock_github_graphql_interface,
@@ -1391,12 +1393,12 @@ class TestHandler:
 
         # Assertions
         assert result == "Script completed. 2 repositories checked. 1 issues created. 1 repositories archived."
-        assert execution_mode == "ENABLE_ARCHIVING=true --- CREATE_GITHUB_ISSUES=true"
+        assert execution_mode == "ENABLE_ARCHIVING=true --- CREATE_GITHUB_ISSUES=true --- USE_TEST_DATA=false"
         mock_get_config_file.assert_called_once_with("./config/config.json")
         mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "features")
         mock_get_dict_value.assert_any_call(mock_get_config_file.return_value, "archive_configuration")
         mock_wrapped_logging.assert_called_once_with(True)
-        assert mock_get_environment_variable.call_count == 6 # noqa: PLR2004
+        assert mock_get_environment_variable.call_count == 7 # noqa: PLR2004
         assert mock_boto3_session.return_value.client.call_count == 2  # noqa: PLR2004
         mock_boto3_session.return_value.client.assert_any_call(
             service_name="secretsmanager", region_name="mock_aws_default_region"
@@ -1416,6 +1418,7 @@ class TestHandler:
             "mock_org",
             {"some_key": "some_value"},
         )
+        mock_get_synthetic_repositories.assert_not_called()
         mock_load_archive_rules.assert_called_once_with({"some_key": "some_value"})
         mock_process_repositories.assert_called_once_with(
             [mock_wrapped_logging.return_value, mock_github_interface.return_value],
@@ -1428,6 +1431,7 @@ class TestHandler:
             ],
             "true",
             "true",
+            "false",
         )
 
     @patch("src.main.get_config_file")
@@ -1478,6 +1482,89 @@ class TestHandler:
         mock_load_archive_rules.assert_not_called()
         mock_process_repositories.assert_not_called()
 
+    @patch("src.main.get_synthetic_repositories")
+    @patch("src.main.get_repositories")
+    @patch("src.main.process_repositories")
+    @patch("src.main.load_archive_rules")
+    @patch("github_api_toolkit.github_interface")
+    @patch("github_api_toolkit.github_graphql_interface")
+    @patch("src.main.get_access_token")
+    @patch("boto3.session.Session")
+    @patch("src.main.get_environment_variable")
+    @patch("src.main.wrapped_logging")
+    @patch("src.main.get_config_file")
+    def test_handler_uses_synthetic_repositories(  # noqa: PLR0913
+        self,
+        mock_get_config_file,
+        mock_wrapped_logging,
+        mock_get_environment_variable,
+        mock_boto3_session,
+        mock_get_access_token,
+        mock_graphql_interface,
+        mock_github_interface,
+        mock_load_archive_rules,
+        mock_process_repositories,
+        mock_get_repositories,
+        mock_get_synthetic_repositories,
+    ):
+        config = {
+            "features": {"show_log_locally": True, "use_local_config": True},
+            "archive_configuration": {"notification_issue_tag": "archive-notice"},
+        }
+        mock_get_config_file.return_value = config
+
+        environment_values = {
+            ("CREATE_GITHUB_ISSUES", "false"): "true",
+            ("ENABLE_ARCHIVING", "false"): "true",
+            ("USE_TEST_DATA", "false"): "true",
+            ("GITHUB_ORG", None): "mock_org",
+            ("GITHUB_APP_CLIENT_ID", None): "mock_app_client_id",
+            ("AWS_DEFAULT_REGION", None): "mock_aws_default_region",
+            ("AWS_SECRET_NAME", None): "mock_aws_secret_name",
+        }
+        mock_get_environment_variable.side_effect = lambda name, default=None: environment_values[
+            (name, default)
+        ]
+
+        logger = mock_wrapped_logging.return_value
+        rest = mock_github_interface.return_value
+        repositories = [{"name": "test_repo", "issues": {"nodes": []}}]
+        mock_get_synthetic_repositories.return_value = (repositories, 0)
+        mock_load_archive_rules.return_value = (
+            365,
+            30,
+            "archive-notice",
+            ["DO_NOT_ARCHIVE"],
+            5,
+        )
+        mock_process_repositories.return_value = (["test_repo"], ["test_repo"])
+
+        result, execution_mode = handler({}, {})
+
+        mock_get_environment_variable.assert_any_call("USE_TEST_DATA", "false")
+        mock_get_synthetic_repositories.assert_called_once_with()
+        mock_get_repositories.assert_not_called()
+
+        process_args = mock_process_repositories.call_args.args
+        assert len(process_args) == 8  # noqa: PLR2004
+        assert process_args[:4] == (
+            [logger, rest],
+            "mock_org",
+            repositories,
+            ["365", "30", "archive-notice", "5"],
+        )
+        assert process_args[4][0] == "Repository Archive Notice"
+        assert "not been updated in over 365 days" in process_args[4][1]
+        assert process_args[5:] == ("true", "true", "true")
+
+        logger.log_info.assert_any_call("Found 1 repositories in 0 page(s).")
+        assert result == (
+            "Script completed. 1 repositories checked. 1 issues created. "
+            "1 repositories archived."
+        )
+        assert execution_mode == (
+            "ENABLE_ARCHIVING=true --- CREATE_GITHUB_ISSUES=true --- USE_TEST_DATA=true"
+        )
 
 class TestHandleResponse:
     @patch("src.main.wrapped_logging")
