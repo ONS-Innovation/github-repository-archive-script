@@ -331,9 +331,9 @@ def get_synthetic_repositories() -> tuple[list[dict], int]:
         module = importlib.import_module(DATA_FILE_MODULE)
         repositories = module.synthetic_repositories
 
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as err:
         error_message = "Test data not found."
-        raise ModuleNotFoundError(error_message)
+        raise ModuleNotFoundError(error_message) from err
 
     return repositories, number_of_pages
 
