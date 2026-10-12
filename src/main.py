@@ -4,9 +4,11 @@ import datetime
 import json
 import os
 import time
+import importlib
 from collections.abc import Callable
 from functools import wraps
 from typing import Any, ParamSpec, TypeVar
+from copy import deepcopy
 
 import boto3
 import github_api_toolkit
@@ -16,10 +18,6 @@ from src.logger import wrapped_logging
 
 T = TypeVar("T")
 P = ParamSpec("P")
-
-import importlib
-
-from copy import deepcopy
 
 
 def get_config_file(path: str) -> Any:
@@ -321,14 +319,14 @@ def get_synthetic_repositories() -> tuple[list[dict], int]:
 
     Args:
         None
-    
+
     Returns:
-        tuple[list[dict], int]: A tuple containing the list of repositories 
+        tuple[list[dict], int]: A tuple containing the list of repositories
         and 0 as a placeholder for the number of pages of repositories.
     """
     DATA_FILE_MODULE = "tests.synthetic_test_data"
     number_of_pages = 0
-    
+
     try:
         module = importlib.import_module(DATA_FILE_MODULE)
         repositories = module.synthetic_repositories
@@ -336,7 +334,7 @@ def get_synthetic_repositories() -> tuple[list[dict], int]:
     except ModuleNotFoundError:
         error_message = "Test data not found."
         raise ModuleNotFoundError(error_message)
-    
+
     return repositories, number_of_pages
 
 
@@ -344,7 +342,6 @@ def write_synthetic_repositories(repositories):
     SYNTHETIC_OUTPUT_PATH = "tests/synthetic_test_output.json"
     with open(SYNTHETIC_OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(repositories, f)
-    return
 
 
 def load_archive_rules(archive_rules: dict) -> tuple[int, int, str, list[str], int]:
@@ -405,6 +402,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
         notification_content (list[str]): A list containing the notification issue title and body.
         enable_archiving (str): The value for the environment variable ENABLE_ARCHIVING.
         create_github_issues (str): The value for the environment variable CREATE_GITHUB_ISSUES.
+        use_test_data (str): The value for the environment variable USE_LOCAL_DATA.
 
     Returns:
         Tuple[list, list]: A tuple containing two lists:
@@ -714,7 +712,7 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     notification_content = [notification_issue_title, notification_issue_body]
 
     repositories_archived, repository_issues_created = process_repositories(
-        interfaces, org, repositories, archive_criteria, notification_content, 
+        interfaces, org, repositories, archive_criteria, notification_content,
         enable_archiving, create_github_issues, use_test_data
     )
 
