@@ -337,7 +337,11 @@ def get_synthetic_repositories() -> tuple[list[dict], int]:
     
     return repositories, number_of_pages
 
+
 def write_synthetic_repositories(repositories):
+    SYNTHETIC_OUTPUT_PATH = "tests/synthetic_test_output.json"
+    with open(SYNTHETIC_OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(repositories, f)
     return
 
 

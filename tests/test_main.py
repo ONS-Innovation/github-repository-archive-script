@@ -523,6 +523,7 @@ class TestGetSyntheticRepositories:
         assert str(e.value) == "Test data not found."
         mock_import_module.assert_called_once_with("tests.synthetic_test_data")
 
+
 class TestWriteSyntheticRepositories:
     def test_write_synthetic_repositories(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
