@@ -337,6 +337,9 @@ def get_synthetic_repositories() -> tuple[list[dict], int]:
     
     return repositories, number_of_pages
 
+def write_synthetic_repositories(repositories):
+    return
+
 
 def load_archive_rules(archive_rules: dict) -> tuple[int, int, str, list[str], int]:
     """Loads the archive rules from the configuration file.

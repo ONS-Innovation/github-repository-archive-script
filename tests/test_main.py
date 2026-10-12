@@ -22,6 +22,7 @@ from src.main import (
     log_error_repositories,
     process_repositories,
     retry_on_error,
+    write_synthetic_repositories,
 )
 
 
@@ -521,6 +522,19 @@ class TestGetSyntheticRepositories:
 
         assert str(e.value) == "Test data not found."
         mock_import_module.assert_called_once_with("tests.synthetic_test_data")
+
+class TestWriteSyntheticRepositories:
+    def test_write_synthetic_repositories(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        output_dir = tmp_path / "tests"
+        output_dir.mkdir()
+
+        repositories = [{"name": "test_repo", "issues": {"nodes": []}}]
+
+        write_synthetic_repositories(repositories)
+
+        with (output_dir / "synthetic_test_output.json").open(encoding="utf-8") as file:
+            assert json.load(file) == repositories
 
 
 class TestLoadArchiveRules:
@@ -1188,17 +1202,13 @@ class TestProcessRepositories:
         assert issues_created == []
         mock_rest_instance.patch.assert_called_once_with(f"/repos/{org}/repo1", {"archived": True})
 
-    @patch("src.main.write_synthetic_test_output", create=True)
+    @patch("src.main.write_synthetic_repositories", create=True)
     @patch("src.main.wrapped_logging")
     @patch("github_api_toolkit.github_interface")
     def test_process_repositories_archives_and_persists_synthetic_data(
-        self, mock_rest, mock_logger, mock_write_synthetic_test_output
+        self, mock_rest, mock_logger, mock_write_synthetic_repositories
     ):
-        mock_logger_instance = mock_logger.return_value
-        mock_rest_instance = mock_rest.return_value
-
-        interfaces = [mock_logger_instance, mock_rest_instance]
-        org = "test_org"
+        interfaces = [mock_logger.return_value, mock_rest.return_value]
         repositories = [
             {
                 "name": "test_repo1",
@@ -1250,7 +1260,7 @@ class TestProcessRepositories:
 
         repositories_archived, _ = process_repositories(
             interfaces,
-            org,
+            "test_org",
             repositories,
             ["365", "30", "archive-notice", "5"],
             ["Repository Archive Notice", "This repository will be archived."],
@@ -1259,17 +1269,30 @@ class TestProcessRepositories:
             "true",
         )
 
-        archived_repository = next(repo for repo in repositories if repo["name"] == "test_repo4")
-        assert archived_repository["archived"] is True
-        assert "test_repo4" in repositories_archived
-        mock_write_synthetic_test_output.assert_called_once_with(repositories)
-        mock_rest_instance.patch.assert_not_called()
+        assert repositories_archived == ["test_repo4"]
 
-    @patch("src.main.write_synthetic_test_output", create=True)
+        original_repo2 = next(repo for repo in repositories if repo["name"] == "test_repo2")
+        original_repo4 = next(repo for repo in repositories if repo["name"] == "test_repo4")
+        assert original_repo2["issues"]["nodes"] == []
+        assert "archived" not in original_repo4
+
+        mock_write_synthetic_repositories.assert_called_once()
+        synthetic_test_output_data = mock_write_synthetic_repositories.call_args.args[0]
+
+        output_repo2 = next(repo for repo in synthetic_test_output_data if repo["name"] == "test_repo2")
+        output_repo4 = next(repo for repo in synthetic_test_output_data if repo["name"] == "test_repo4")
+        assert output_repo2["issues"]["nodes"][0]["title"] == "Repository Archive Notice"
+        assert output_repo4["archived"] is True
+
+        mock_rest.return_value.get.assert_not_called()
+        mock_rest.return_value.post.assert_not_called()
+        mock_rest.return_value.patch.assert_not_called()
+
+    @patch("src.main.write_synthetic_repositories", create=True)
     @patch("src.main.wrapped_logging")
     @patch("github_api_toolkit.github_interface")
     def test_process_repositories_creates_and_persists_synthetic_issue(
-        self, mock_rest, mock_logger, mock_write_synthetic_test_output
+        self, mock_rest, mock_logger, mock_write_synthetic_repositories
     ):
         interfaces = [mock_logger.return_value, mock_rest.return_value]
         repositories = [
@@ -1295,9 +1318,15 @@ class TestProcessRepositories:
 
         assert repositories_archived == []
         assert issues_created == ["test_repo2"]
-        assert repositories[0]["issues"]["nodes"][0]["title"] == "Repository Archive Notice"
-        assert "createdAt" in repositories[0]["issues"]["nodes"][0]
-        mock_write_synthetic_test_output.assert_called_once_with(repositories)
+        assert repositories[0]["issues"]["nodes"] == []
+
+        mock_write_synthetic_repositories.assert_called_once()
+        synthetic_test_output_data = mock_write_synthetic_repositories.call_args.args[0]
+        output_repo = synthetic_test_output_data[0]
+        created_issue = output_repo["issues"]["nodes"][0]
+        assert created_issue["title"] == "Repository Archive Notice"
+        assert "createdAt" in created_issue
+
         mock_rest.return_value.get.assert_not_called()
         mock_rest.return_value.post.assert_not_called()
         mock_rest.return_value.patch.assert_not_called()
