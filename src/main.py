@@ -1,14 +1,14 @@
 """A script to iterate over GitHub repositories and archive them if they're inactive."""
 
 import datetime
+import importlib
 import json
 import os
 import time
-import importlib
 from collections.abc import Callable
+from copy import deepcopy
 from functools import wraps
 from typing import Any, ParamSpec, TypeVar
-from copy import deepcopy
 
 import boto3
 import github_api_toolkit
