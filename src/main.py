@@ -739,9 +739,7 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     return message, execution_mode
 
 
-# # Dev Only
-# # Uncomment the following line to run the script locally
-# if __name__ == "__main__":
-#     # from pprint import pprint
-#     # pprint(handler(None, None))
-#     handler(None, None)
+# Dev Only
+# Uncomment the following line to run the script locally
+if __name__ == "__main__":
+    handler(None, None)
