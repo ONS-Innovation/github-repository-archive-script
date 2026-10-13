@@ -141,7 +141,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
     By default, the script will run in this mode (harmless mode), ensuring that no real changes are made to GitHub during local testing. See the environment variables below for more information.
 
     A third environment variable prompts the script to process real GitHub data by default:
-    
+
     ``` bash
     export USE_TEST_DATA=false
     ```
@@ -265,20 +265,20 @@ Before the doing the following, make sure your Podman VM is running. Run `podman
 
 ### Using synthetic test data
 
-By changing the setting of the relevant environment variable, you can run the script with 
+By changing the setting of the relevant environment variable, you can run the script with
 synthetic repository test data:
 
-    ``` bash
-    export USE_TEST_DATA=false
-    ```
+```bash
+export USE_TEST_DATA=false
+```
 
-Instead of data provided through the GitHub API, the script will then use the test data found in 
+Instead of data provided through the GitHub API, the script will then use the test data found in
 synthetic_repositories in tests/synthetic_test_data.py. You can alter that data set to create any
 test case.
 
 The original template for the test file can be found under tests/synthetic_test_data_template.py.
 
-The output of any test run with synthetic data will be saved in JSON format in 
+The output of any test run with synthetic data will be saved in JSON format in
 tests/synthetic_test_output.json.
 
 ## Deployment

@@ -338,7 +338,7 @@ def get_synthetic_repositories() -> tuple[list[dict], int]:
     return repositories, number_of_pages
 
 
-def write_synthetic_repositories(repositories):
+def write_synthetic_repositories(repositories: list) -> None:
     SYNTHETIC_OUTPUT_PATH = "tests/synthetic_test_output.json"
     with open(SYNTHETIC_OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(repositories, f)
@@ -382,7 +382,7 @@ def handle_response(logger: wrapped_logging, response: Any, message: str) -> boo
     return True
 
 
-def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912, PLR0917
+def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
     interfaces: list[Any],
     org: str,
     repositories: list[dict],
@@ -547,7 +547,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912, PLR0917
                         "title": notification_issue_title,
                         "createdAt": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                         "body": notification_issue_body,
-                        "labels": [notification_issue_tag]
+                        "labels": [notification_issue_tag],
                     }
                 )
 
@@ -712,8 +712,14 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     notification_content = [notification_issue_title, notification_issue_body]
 
     repositories_archived, repository_issues_created = process_repositories(
-        interfaces, org, repositories, archive_criteria, notification_content,
-        enable_archiving, create_github_issues, use_test_data
+        interfaces,
+        org,
+        repositories,
+        archive_criteria,
+        notification_content,
+        enable_archiving,
+        create_github_issues,
+        use_test_data,
     )
 
     message = f"Script completed. {len(repositories)} repositories checked. "
