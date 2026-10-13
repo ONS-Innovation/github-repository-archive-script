@@ -382,7 +382,7 @@ def handle_response(logger: wrapped_logging, response: Any, message: str) -> boo
     return True
 
 
-def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
+def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912, PLR0917
     interfaces: list[Any],
     org: str,
     repositories: list[dict],
