@@ -13,6 +13,7 @@ A Python utility used to archive old, unused GitHub repositories from an organis
   - [Running the Project](#running-the-project)
     - [Outside of a Container](#outside-of-a-container)
     - [Containerised](#containerised)
+    - [Using synthetic test data](#using-synthetic-test-data)
   - [Deployment](#deployment)
     - [Deployments with Concourse](#deployments-with-concourse)
       - [Allowlisting your IP](#allowlisting-your-ip)
@@ -261,6 +262,24 @@ Before the doing the following, make sure your Podman VM is running. Run `podman
     ```bash
     podman stop <container_id>
     ```
+
+### Using synthetic test data
+
+By changing the setting of the relevant environment variable, you can run the script with 
+synthetic repository test data:
+
+    ``` bash
+    export USE_TEST_DATA=false
+    ```
+
+Instead of data provided through the GitHub API, the script will then use the test data found in 
+synthetic_repositories in tests/synthetic_test_data.py. You can alter that data set to create any
+test case.
+
+The original template for the test file can be found under tests/synthetic_test_data_template.py.
+
+The output of any test run with synthetic data will be saved in JSON format in 
+tests/synthetic_test_output.json.
 
 ## Deployment
 
