@@ -1410,6 +1410,7 @@ class TestHandler:
             "ENABLE_ARCHIVING=false --- CREATE_GITHUB_ISSUES=false --- USE_TEST_DATA=true"
         )
 
+
 class TestHandleResponse:
     @patch("src.main.wrapped_logging")
     def test_handle_response_valid_response(self, mock_logger):
