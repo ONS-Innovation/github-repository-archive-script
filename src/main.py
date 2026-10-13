@@ -338,12 +338,6 @@ def get_synthetic_repositories() -> tuple[list[dict], int]:
     return repositories, number_of_pages
 
 
-def write_synthetic_repositories(repositories: list) -> None:
-    SYNTHETIC_OUTPUT_PATH = "tests/synthetic_test_output.json"
-    with open(SYNTHETIC_OUTPUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(repositories, f)
-
-
 def load_archive_rules(archive_rules: dict) -> tuple[int, int, str, list[str], int]:
     """Loads the archive rules from the configuration file.
 
@@ -390,7 +384,6 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
     notification_content: list[str],
     enable_archiving: str,
     create_github_issues: str,
-    use_test_data: str,
 ) -> tuple[list, list]:
     """Processes the repositories to archive them if they meet the criteria, or create issues to notify the owners/contributors.
 
@@ -412,7 +405,6 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
     issues_created = 0
     repository_issues_created = []
     repositories_archived = []
-    synthetic_test_output = []
 
     logger, rest = interfaces
     archive_threshold, notification_period, notification_issue_tag, maximum_notifications = archive_criteria
@@ -430,10 +422,6 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
         if last_update > cut_off_date:
             continue
 
-        # If use_test_data is enabled, add the repository to the synthetic test output
-        if use_test_data == "true":
-            synthetic_test_output.append(deepcopy(repository))
-
         logger.log_info(
             f"Repository {repository['name']} has not been updated in over {archive_threshold} days. Checking for open Github Issues."
         )
@@ -449,7 +437,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
             issue_age = datetime.datetime.now() - issue_created_at
 
             if issue_age.days > int(notification_period):
-                if enable_archiving == "true" and use_test_data == "false":
+                if enable_archiving == "true":
                     endpoint = f"/repos/{org}/{repository['name']}"
 
                     archive_params = {"archived": True}
@@ -466,9 +454,6 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
                         continue
 
                     logger.log_info(f"Successfully archived repository {repository['name']}")
-
-                elif enable_archiving == "true" and use_test_data == "true":
-                    synthetic_test_output[-1]["archived"] = True
 
                 elif enable_archiving == "false":
                     logger.log_info(
@@ -491,7 +476,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
         if issues_created < int(maximum_notifications):
             # Only create GitHub issues if this feature is enabled
-            if create_github_issues == "true" and use_test_data == "false":
+            if create_github_issues == "true":
                 # Create Issue Label for Archive Notice if it does not exist
 
                 label_endpoint = f"/repos/{org}/{repository['name']}/labels/{notification_issue_tag}"
@@ -541,16 +526,6 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
                 logger.log_info(f"Created issue for repository {repository['name']}.")
 
-            elif create_github_issues == "true" and use_test_data == "true":
-                synthetic_test_output[-1]["issues"]["nodes"].append(
-                    {
-                        "title": notification_issue_title,
-                        "createdAt": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "body": notification_issue_body,
-                        "labels": [notification_issue_tag],
-                    }
-                )
-
             elif create_github_issues == "false":
                 logger.log_info(
                     f"Repository {repository['name']} warrants creating a GitHub Issue. Reason: No issue found with label {notification_issue_tag}."
@@ -566,9 +541,6 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
         else:
             logger.log_info("Skipping repository. Maximum number of notifications reached.")
-
-    if synthetic_test_output != []:
-        write_synthetic_repositories(synthetic_test_output)
 
     return repositories_archived, repository_issues_created
 
@@ -657,6 +629,9 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
 
     # Get the repositories from GitHub or locally from tests/synthetic_test_data.py
     if use_test_data == "true":
+        # If synthetic test data are used, the script will automatically run in harmless mode, i.e. no changes on GitHub
+        enable_archiving = "false"
+        create_github_issues = "false"
         repositories, number_of_pages = get_synthetic_repositories()
     else:
         repositories, number_of_pages = get_repositories(logger, ql, org, archive_rules)
@@ -719,7 +694,6 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
         notification_content,
         enable_archiving,
         create_github_issues,
-        use_test_data,
     )
 
     message = f"Script completed. {len(repositories)} repositories checked. "
@@ -739,7 +713,7 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     return message, execution_mode
 
 
-# Dev Only
-# Uncomment the following line to run the script locally
-if __name__ == "__main__":
-    handler(None, None)
+# # Dev Only
+# # Uncomment the following line to run the script locally
+# if __name__ == "__main__":
+#     handler(None, None)

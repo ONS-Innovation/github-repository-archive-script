@@ -22,7 +22,6 @@ from src.main import (
     log_error_repositories,
     process_repositories,
     retry_on_error,
-    write_synthetic_repositories,
 )
 
 
@@ -523,19 +522,6 @@ class TestGetSyntheticRepositories:
         assert str(e.value) == "Test data not found."
         mock_import_module.assert_called_once_with("tests.synthetic_test_data")
 
-class TestWriteSyntheticRepositories:
-    def test_write_synthetic_repositories(self, tmp_path, monkeypatch):
-        monkeypatch.chdir(tmp_path)
-        output_dir = tmp_path / "tests"
-        output_dir.mkdir()
-
-        repositories = [{"name": "test_repo", "issues": {"nodes": []}}]
-
-        write_synthetic_repositories(repositories)
-
-        with (output_dir / "synthetic_test_output.json").open(encoding="utf-8") as file:
-            assert json.load(file) == repositories
-
 
 class TestLoadArchiveRules:
     def test_load_archive_rules_success(self):
@@ -607,14 +593,13 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         mock_response = Response()
         mock_rest_instance.patch.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == ["repo1"]
@@ -644,7 +629,6 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         mock_response = Response()
 
@@ -652,7 +636,7 @@ class TestProcessRepositories:
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -703,14 +687,13 @@ class TestProcessRepositories:
 
         enable_archiving = "false"
         create_github_issues = "false"
-        use_test_data = "false"
 
         mock_response = Response()
         mock_rest_instance.patch.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == ["repo1"]
@@ -738,11 +721,10 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -798,14 +780,13 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -844,11 +825,10 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -908,15 +888,14 @@ class TestProcessRepositories:
         notification_content = ["Repository Archive Notice", "This repository will be archived."]
 
         enable_archiving = "true"
-        create_github_issues = "true"
-        use_test_data = "false"       
+        create_github_issues = "true"      
 
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -979,14 +958,13 @@ class TestProcessRepositories:
 
         enable_archiving = "false"
         create_github_issues = "false"
-        use_test_data = "false"
 
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1019,14 +997,13 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1062,14 +1039,13 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         mock_response = Response()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1105,14 +1081,13 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         mock_response = HTTPError()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1148,14 +1123,13 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         mock_response = HTTPError()
         mock_rest_instance.post.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
@@ -1188,147 +1162,18 @@ class TestProcessRepositories:
 
         enable_archiving = "true"
         create_github_issues = "true"
-        use_test_data = "false"
 
         mock_response = HTTPError()
         mock_rest_instance.patch.return_value = mock_response
 
         repositories_archived, issues_created = process_repositories(
             interfaces, org, repositories, archive_criteria, notification_content, 
-            enable_archiving, create_github_issues, use_test_data
+            enable_archiving, create_github_issues
         )
 
         assert repositories_archived == []
         assert issues_created == []
         mock_rest_instance.patch.assert_called_once_with(f"/repos/{org}/repo1", {"archived": True})
-
-    @patch("src.main.write_synthetic_repositories")
-    @patch("src.main.wrapped_logging")
-    @patch("github_api_toolkit.github_interface")
-    def test_process_repositories_archives_and_persists_synthetic_data(
-        self, mock_rest, mock_logger, mock_write_synthetic_repositories
-    ):
-        interfaces = [mock_logger.return_value, mock_rest.return_value]
-        repositories = [
-            {
-                "name": "test_repo1",
-                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=100)).strftime(
-                    "%Y-%m-%dT%H:%M:%SZ"
-                ),
-                "issues": {"nodes": []},
-            },
-            {
-                "name": "test_repo3",
-                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime(
-                    "%Y-%m-%dT%H:%M:%SZ"
-                ),
-                "issues": {
-                    "nodes": [
-                        {
-                            "title": "test_issue1",
-                            "createdAt": (datetime.datetime.now() - datetime.timedelta(days=20)).strftime(
-                                "%Y-%m-%dT%H:%M:%SZ"
-                            ),
-                        }
-                    ]
-                },
-            },
-            {
-                "name": "test_repo4",
-                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime(
-                    "%Y-%m-%dT%H:%M:%SZ"
-                ),
-                "issues": {
-                    "nodes": [
-                        {
-                            "title": "Repository Archive Notice",
-                            "createdAt": (datetime.datetime.now() - datetime.timedelta(days=40)).strftime(
-                                "%Y-%m-%dT%H:%M:%SZ"
-                            ),
-                        }
-                    ]
-                },
-            },
-        ]
-
-        repositories_archived, _ = process_repositories(
-            interfaces,
-            "test_org",
-            repositories,
-            ["365", "30", "archive-notice", "5"],
-            ["Repository Archive Notice", "This repository will be archived."],
-            "true",
-            "true",
-            "true",
-        )
-
-        assert repositories_archived == ["test_repo4"]
-
-        original_repo3 = next(repo for repo in repositories if repo["name"] == "test_repo3")
-        original_repo4 = next(repo for repo in repositories if repo["name"] == "test_repo4")
-        assert original_repo3["issues"]["nodes"][0]["title"] == "test_issue1"
-        assert "archived" not in original_repo3
-        assert "archived" not in original_repo4
-
-        mock_write_synthetic_repositories.assert_called_once()
-        synthetic_test_output_data = mock_write_synthetic_repositories.call_args.args[0]
-
-        output_repo3 = next(repo for repo in synthetic_test_output_data if repo["name"] == "test_repo3")
-        output_repo4 = next(repo for repo in synthetic_test_output_data if repo["name"] == "test_repo4")
-        assert output_repo3["issues"]["nodes"][0]["title"] == "test_issue1"
-        assert "archived" not in output_repo3
-        assert output_repo4["archived"] is True
-
-        mock_rest.return_value.get.assert_not_called()
-        mock_rest.return_value.post.assert_not_called()
-        mock_rest.return_value.patch.assert_not_called()
-
-    @patch("src.main.write_synthetic_repositories")
-    @patch("src.main.wrapped_logging")
-    @patch("github_api_toolkit.github_interface")
-    def test_process_repositories_creates_and_persists_synthetic_issue(
-        self, mock_rest, mock_logger, mock_write_synthetic_repositories
-    ):
-        interfaces = [mock_logger.return_value, mock_rest.return_value]
-        repositories = [
-            {
-                "name": "test_repo2",
-                "updatedAt": (datetime.datetime.now() - datetime.timedelta(days=400)).strftime(
-                    "%Y-%m-%dT%H:%M:%SZ"
-                ),
-                "issues": {"nodes": []},
-            }
-        ]
-        notification_issue_tag = "archive-notice"
-        notification_issue_body = "This repository will be archived."
-
-        repositories_archived, issues_created = process_repositories(
-            interfaces,
-            "test_org",
-            repositories,
-            ["365", "30", notification_issue_tag, "5"],
-            ["Repository Archive Notice", notification_issue_body],
-            "true",
-            "true",
-            "true",
-        )
-
-        assert repositories_archived == []
-        assert issues_created == ["test_repo2"]
-        assert repositories[0]["issues"]["nodes"] == []
-
-        mock_write_synthetic_repositories.assert_called_once()
-        synthetic_test_output_data = mock_write_synthetic_repositories.call_args.args[0]
-        created_issue = synthetic_test_output_data[0]["issues"]["nodes"][0]
-
-        assert created_issue["title"] == "Repository Archive Notice"
-        assert created_issue["body"] == notification_issue_body
-        assert created_issue["labels"] == [notification_issue_tag]
-        assert "createdAt" in created_issue
-
-        mock_rest.return_value.get.assert_not_called()
-        mock_rest.return_value.post.assert_not_called()
-        mock_rest.return_value.patch.assert_not_called()
 
 
 class TestHandler:
@@ -1431,7 +1276,6 @@ class TestHandler:
             ],
             "true",
             "true",
-            "false",
         )
 
     @patch("src.main.get_config_file")
@@ -1546,7 +1390,7 @@ class TestHandler:
         mock_get_repositories.assert_not_called()
 
         process_args = mock_process_repositories.call_args.args
-        assert len(process_args) == 8  # noqa: PLR2004
+        assert len(process_args) == 7  # noqa: PLR2004
         assert process_args[:4] == (
             [logger, rest],
             "mock_org",
@@ -1555,7 +1399,7 @@ class TestHandler:
         )
         assert process_args[4][0] == "Repository Archive Notice"
         assert "not been updated in over 365 days" in process_args[4][1]
-        assert process_args[5:] == ("true", "true", "true")
+        assert process_args[5:] == ("false", "false")
 
         logger.log_info.assert_any_call("Found 1 repositories in 0 page(s).")
         assert result == (
@@ -1563,7 +1407,7 @@ class TestHandler:
             "1 repositories archived."
         )
         assert execution_mode == (
-            "ENABLE_ARCHIVING=true --- CREATE_GITHUB_ISSUES=true --- USE_TEST_DATA=true"
+            "ENABLE_ARCHIVING=false --- CREATE_GITHUB_ISSUES=false --- USE_TEST_DATA=true"
         )
 
 class TestHandleResponse:
