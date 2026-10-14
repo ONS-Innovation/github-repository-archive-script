@@ -146,6 +146,8 @@ To run the Lambda function outside of a container, we need to execute the `handl
     export USE_TEST_DATA=false
     ```
 
+    For more information on the use of test data, please see [Using synthetic test data](#using-synthetic-test-data).
+
     There are also several other environment variables that need to be set correctly for the script to run:
 
     ```bash
@@ -272,11 +274,9 @@ synthetic repository test data:
 export USE_TEST_DATA=true
 ```
 
-Instead of data provided through the GitHub API, the script will then use the test data found in
-synthetic_repositories in tests/synthetic_test_data.py. That data file can be altered to create any
-test case you want included.
-
-The original template for the test file can be found under tests/synthetic_test_data_template.py.
+Instead of data provided through the GitHub API, the script will then use the test data found
+in `tests/synthetic_test_data.py`. This file contains template test data that can be altered
+to create any test case you want included.
 
 When you choose to use test data, ENABLE_ARCHIVING and CREATE_GITHUB_ISSUES are set to false
 for script execution. This is to avoid any changes on real GitHub repositories during testing.

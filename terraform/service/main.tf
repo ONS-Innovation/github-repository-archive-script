@@ -59,6 +59,7 @@ resource "aws_lambda_function" "lambda_function" {
       IMAGE_TAG            = var.container_ver
       ENABLE_ARCHIVING     = var.enable_archiving
       CREATE_GITHUB_ISSUES = var.create_github_issues
+      USE_TEST_DATA        = var.use_test_data
     }
   }
 }
