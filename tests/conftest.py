@@ -1,10 +1,12 @@
 import pytest
 
+
 @pytest.fixture
 def mock_environment_lookup():
     values = {
         ("CREATE_GITHUB_ISSUES", "false"): "true",
         ("ENABLE_ARCHIVING", "false"): "true",
+        ("USE_TEST_DATA", "false"): "false",
         ("GITHUB_ORG", None): "mock_org",
         ("GITHUB_APP_CLIENT_ID", None): "mock_app_client_id",
         ("AWS_DEFAULT_REGION", None): "mock_aws_default_region",

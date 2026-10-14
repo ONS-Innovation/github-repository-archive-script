@@ -109,6 +109,12 @@ variable "create_github_issues" {
   default     = true
 }
 
+variable "use_test_data" {
+  description = "Flag to enable synthetic testing"
+  type        = bool
+  default     = false
+}
+
 locals {
   bucket_name    = "${var.env_name}-${var.aws_bucket_name}"
   aws_account_id = data.aws_caller_identity.current.account_id

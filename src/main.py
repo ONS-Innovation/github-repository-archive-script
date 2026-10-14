@@ -1,6 +1,7 @@
 """A script to iterate over GitHub repositories and archive them if they're inactive."""
 
 import datetime
+import importlib
 import json
 import os
 import time
@@ -80,7 +81,7 @@ def get_environment_variable(variable_name: str, default_value: str | None = Non
     """
     variable = os.getenv(variable_name)
 
-    if default_value:
+    if default_value and not variable:
         variable = default_value
 
     if not variable:
@@ -312,6 +313,30 @@ def get_repositories(
     return repositories, number_of_pages
 
 
+def get_synthetic_repositories() -> tuple[list[dict], int]:
+    """Gets all synthetically generated repositories from the specified file/module.
+
+    Args:
+        None
+
+    Returns:
+        tuple[list[dict], int]: A tuple containing the list of repositories
+        and 0 as a placeholder for the number of pages of repositories.
+    """
+    DATA_FILE_MODULE = "tests.synthetic_test_data"
+    number_of_pages = 0
+
+    try:
+        module = importlib.import_module(DATA_FILE_MODULE)
+        repositories = module.synthetic_repositories
+
+    except ModuleNotFoundError as err:
+        error_message = "Test data not found."
+        raise ModuleNotFoundError(error_message) from err
+
+    return repositories, number_of_pages
+
+
 def load_archive_rules(archive_rules: dict) -> tuple[int, int, str, list[str], int]:
     """Loads the archive rules from the configuration file.
 
@@ -369,6 +394,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
         notification_content (list[str]): A list containing the notification issue title and body.
         enable_archiving (str): The value for the environment variable ENABLE_ARCHIVING.
         create_github_issues (str): The value for the environment variable CREATE_GITHUB_ISSUES.
+        use_test_data (str): The value for the environment variable USE_LOCAL_DATA.
 
     Returns:
         Tuple[list, list]: A tuple containing two lists:
@@ -448,7 +474,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
         # Create an issue with the label and a message to the repository owner/contributors
 
         if issues_created < int(maximum_notifications):
-            # Only create GitHub issues if this function is enabled
+            # Only create GitHub issues if this feature is enabled
             if create_github_issues == "true":
                 # Create Issue Label for Archive Notice if it does not exist
 
@@ -574,6 +600,7 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
 
     create_github_issues = get_environment_variable("CREATE_GITHUB_ISSUES", "false")
     enable_archiving = get_environment_variable("ENABLE_ARCHIVING", "false")
+    use_test_data = get_environment_variable("USE_TEST_DATA", "false")
 
     org = get_environment_variable("GITHUB_ORG")
     app_client_id = get_environment_variable("GITHUB_APP_CLIENT_ID")
@@ -599,9 +626,14 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
 
     logger.log_info("GitHub API interfaces created.")
 
-    # Get the repositories from GitHub
-
-    repositories, number_of_pages = get_repositories(logger, ql, org, archive_rules)
+    # Get the repositories from GitHub or locally from tests/synthetic_test_data.py
+    if use_test_data == "true":
+        # If synthetic test data are used, the script will automatically run in harmless mode, i.e. no changes on GitHub
+        enable_archiving = "false"
+        create_github_issues = "false"
+        repositories, number_of_pages = get_synthetic_repositories()
+    else:
+        repositories, number_of_pages = get_repositories(logger, ql, org, archive_rules)
 
     logger.log_info(f"Found {len(repositories)} repositories in {number_of_pages} page(s).")
 
@@ -654,7 +686,13 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
     notification_content = [notification_issue_title, notification_issue_body]
 
     repositories_archived, repository_issues_created = process_repositories(
-        interfaces, org, repositories, archive_criteria, notification_content, enable_archiving, create_github_issues
+        interfaces,
+        org,
+        repositories,
+        archive_criteria,
+        notification_content,
+        enable_archiving,
+        create_github_issues,
     )
 
     message = f"Script completed. {len(repositories)} repositories checked. "
@@ -663,7 +701,11 @@ def handler(event: None, context: None) -> tuple[str, str]:  # noqa: PLR0915
 
     logger.log_info(message)
 
-    execution_mode = f"ENABLE_ARCHIVING={enable_archiving} --- CREATE_GITHUB_ISSUES={create_github_issues}"
+    execution_mode = (
+        f"ENABLE_ARCHIVING={enable_archiving} --- "
+        f"CREATE_GITHUB_ISSUES={create_github_issues} --- "
+        f"USE_TEST_DATA={use_test_data}"
+    )
 
     logger.log_info(execution_mode)
 

@@ -1,7 +1,7 @@
 {
   "features": {
-    "show_log_locally": false,
-    "use_local_config": false
+    "show_log_locally": true,
+    "use_local_config": true
   },
   "archive_configuration": {
     "archive_threshold": 365,

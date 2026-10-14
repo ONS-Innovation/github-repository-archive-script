@@ -13,6 +13,7 @@ A Python utility used to archive old, unused GitHub repositories from an organis
   - [Running the Project](#running-the-project)
     - [Outside of a Container](#outside-of-a-container)
     - [Containerised](#containerised)
+    - [Using synthetic test data](#using-synthetic-test-data)
   - [Deployment](#deployment)
     - [Deployments with Concourse](#deployments-with-concourse)
       - [Allowlisting your IP](#allowlisting-your-ip)
@@ -139,6 +140,14 @@ To run the Lambda function outside of a container, we need to execute the `handl
 
     By default, the script will run in this mode (harmless mode), ensuring that no real changes are made to GitHub during local testing. See the environment variables below for more information.
 
+    A third environment variable prompts the script to process real GitHub data by default:
+
+    ``` bash
+    export USE_TEST_DATA=false
+    ```
+
+    For more information on the use of test data, please see [Using synthetic test data](#using-synthetic-test-data).
+
     There are also several other environment variables that need to be set correctly for the script to run:
 
     ```bash
@@ -155,6 +164,7 @@ To run the Lambda function outside of a container, we need to execute the `handl
     |-----------------------------|----------------------------------------------------------------------------------------------------|
     | ENABLE_ARCHIVING            | Specifies whether script execution involves archiving ("true") or not ("false").                   |
     | CREATE_GITHUB_ISSUES        | Specifies whether script execution involves creating GitHub Issues ("true") or not ("false").      |
+    | USE_TEST_DATA               | Specifies whether the script will use synthetic test data ("true") or real GitHub data ("false").  |
     | GITHUB_ORG                  | The organisation you would like to run the tool in.                                                |
     | GITHUB_APP_CLIENT_ID        | The Client ID for the GitHub App which the tool uses to authenticate with the GitHub API.          |
     | AWS_DEFAULT_REGION          | The AWS Region which the Secret Manager Secret is in.                                              |
@@ -254,6 +264,22 @@ Before the doing the following, make sure your Podman VM is running. Run `podman
     ```bash
     podman stop <container_id>
     ```
+
+### Using synthetic test data
+
+By changing the setting of the relevant environment variable, you can run the script with
+synthetic repository test data:
+
+```bash
+export USE_TEST_DATA=true
+```
+
+Instead of data provided through the GitHub API, the script will then use the test data found
+in `tests/synthetic_test_data.py`. This file contains template test data that can be altered
+to create any test case you want included.
+
+When you choose to use test data, ENABLE_ARCHIVING and CREATE_GITHUB_ISSUES are set to false
+for script execution. This is to avoid any changes on real GitHub repositories during testing.
 
 ## Deployment
 
