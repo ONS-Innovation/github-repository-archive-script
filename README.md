@@ -269,17 +269,17 @@ By changing the setting of the relevant environment variable, you can run the sc
 synthetic repository test data:
 
 ```bash
-export USE_TEST_DATA=false
+export USE_TEST_DATA=true
 ```
 
 Instead of data provided through the GitHub API, the script will then use the test data found in
-synthetic_repositories in tests/synthetic_test_data.py. You can alter that data set to create any
-test case.
+synthetic_repositories in tests/synthetic_test_data.py. That data file can be altered to create any
+test case you want included.
 
 The original template for the test file can be found under tests/synthetic_test_data_template.py.
 
-The output of any test run with synthetic data will be saved in JSON format in
-tests/synthetic_test_output.json.
+When you choose to use test data, ENABLE_ARCHIVING and CREATE_GITHUB_ISSUES are set to false
+for script execution. This is to avoid any changes on real GitHub repositories during testing.
 
 ## Deployment
 

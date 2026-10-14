@@ -1357,6 +1357,8 @@ class TestHandler:
         }
         mock_get_config_file.return_value = config
 
+        # Test the handler's safety override if the user enables archiving,
+        # issue creation, and synthetic data use all at once.
         environment_values = {
             ("CREATE_GITHUB_ISSUES", "false"): "true",
             ("ENABLE_ARCHIVING", "false"): "true",
