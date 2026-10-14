@@ -81,7 +81,7 @@ def get_environment_variable(variable_name: str, default_value: str | None = Non
     """
     variable = os.getenv(variable_name)
 
-    if default_value:
+    if default_value and not variable:
         variable = default_value
 
     if not variable:
