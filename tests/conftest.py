@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.fixture
 def mock_environment_lookup():
     values = {

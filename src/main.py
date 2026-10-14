@@ -454,7 +454,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
                     logger.log_info(f"Successfully archived repository {repository['name']}")
 
-                elif enable_archiving == "false":
+                else:
                     logger.log_info(
                         f"Repository {repository['name']} is eligible for archiving. Reason: Github Issue open for {issue_age.days} days."
                     )
@@ -525,7 +525,7 @@ def process_repositories(  # noqa: C901, PLR0915, PLR0913, PLR0912
 
                 logger.log_info(f"Created issue for repository {repository['name']}.")
 
-            elif create_github_issues == "false":
+            else:
                 logger.log_info(
                     f"Repository {repository['name']} warrants creating a GitHub Issue. Reason: No issue found with label {notification_issue_tag}."
                 )

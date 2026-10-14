@@ -82,8 +82,8 @@ docs-fix: 		## Install and run the documentation linter with auto-fix (Markdownl
 
 .PHONY: format
 format:  		## Run formatters.
-	poetry run ruff check src --fix
-	poetry run ruff format src
+	poetry run ruff check src tests --fix
+	poetry run ruff format src tests
 
 ##
 
